@@ -1,0 +1,78 @@
+# ci.yml — runs on every push and pull request to main or develop
+
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  # ── Backend job ──────────────────────────────────────────────────────────────
+  backend:
+    name: Backend – lint and test
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: check out the repository code
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      # Step 2: install Python 3.10
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      # Step 3: install all Python dependencies listed in requirements.txt
+      - name: Install Python dependencies
+        run: pip install -r backend/requirements.txt
+
+      # Step 4: run flake8 to check code style
+      - name: Lint with flake8
+        run: flake8 backend/app backend/tests --config backend/.flake8
+
+      # Step 5: run pytest with coverage — fail if coverage drops below 70%
+      - name: Run tests with coverage
+        env:
+          # Make sure Python can find the backend package
+          PYTHONPATH: .
+        run: pytest backend/tests --cov=backend/app --cov-fail-under=70
+
+  # ── Frontend job ─────────────────────────────────────────────────────────────
+  frontend:
+    name: Frontend – lint and test
+    runs-on: ubuntu-latest
+    # Only run this job if frontend/package.json actually exists
+    if: ${{ hashFiles('frontend/package.json') != '' }}
+
+    defaults:
+      run:
+        # All commands in this job run from the frontend folder
+        working-directory: frontend
+
+    steps:
+      # Step 1: check out the repository code
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      # Step 2: install Node.js 20
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      # Step 3: install npm packages exactly as recorded in package-lock.json
+      - name: Install npm dependencies
+        run: npm ci
+
+      # Step 4: run the linter if a lint script is defined
+      - name: Lint (if script exists)
+        run: npm run lint --if-present
+
+      # Step 5: run Jest tests if a test script is defined
+      - name: Run Jest tests (if script exists)
+        run: npm test --if-present -- --ci
