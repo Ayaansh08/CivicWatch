@@ -1,0 +1,39 @@
+# docker-compose.yml — spins up the PostgreSQL + PostGIS database for local development
+
+version: "3.9"
+
+services:
+  # The only service we run: a PostgreSQL database with the PostGIS extension built in
+  db:
+    # Use the official PostGIS image (PostgreSQL 15 + PostGIS 3.4)
+    image: postgis/postgis:15-3.4
+
+    environment:
+      # Set the database username
+      POSTGRES_USER: civic
+      # Set the database password
+      POSTGRES_PASSWORD: civic
+      # Create a database called civicwatch on first start
+      POSTGRES_DB: civicwatch
+
+    ports:
+      # Expose port 5432 on the host so our app can connect
+      - "5432:5432"
+
+    volumes:
+      # Store database data in a named Docker volume so it survives restarts
+      - civic_db_data:/var/lib/postgresql/data
+
+    healthcheck:
+      # Ask PostgreSQL if it is ready to accept connections
+      test: ["CMD-SHELL", "pg_isready -U civic -d civicwatch"]
+      # Check every 10 seconds
+      interval: 10s
+      # Give it 5 seconds to respond before marking it unhealthy
+      timeout: 5s
+      # Try 5 times before giving up
+      retries: 5
+
+# Declare the named volume used above
+volumes:
+  civic_db_data:
