@@ -1,0 +1,7 @@
+[flake8]
+max-line-length = 100
+exclude =
+    backend/.venv,
+    backend/alembic/versions,
+    .venv,
+    __pycache__
