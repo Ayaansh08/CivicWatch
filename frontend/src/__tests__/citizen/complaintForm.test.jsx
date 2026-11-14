@@ -27,8 +27,24 @@ afterEach(() => {
   localStorage.clear();
 });
 
+async function fillValidForm() {
+  await screen.findByRole("option", { name: "Pothole" });
+
+  fireEvent.change(screen.getByLabelText(/title/i), {
+    target: { value: "Road damage" },
+  });
+
+  fireEvent.change(screen.getByLabelText(/description/i), {
+    target: { value: "Large pothole near the market" },
+  });
+
+  fireEvent.change(screen.getByLabelText(/category/i), {
+    target: { value: "1" },
+  });
+}
+
 describe("ComplaintForm", () => {
-  test("renders all complaint fields", () => {
+  test("renders all complaint fields", async () => {
     render(<ComplaintForm />);
 
     expect(screen.getByLabelText(/title/i)).toBeInTheDocument();
@@ -36,9 +52,11 @@ describe("ComplaintForm", () => {
     expect(screen.getByLabelText(/category/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/latitude/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/longitude/i)).toBeInTheDocument();
+
+    await screen.findByRole("option", { name: "Pothole" });
   });
 
-  test("shows validation errors when submitted empty", () => {
+  test("shows validation errors when submitted empty", async () => {
     render(<ComplaintForm />);
 
     fireEvent.click(screen.getByRole("button", { name: /submit/i }));
@@ -46,6 +64,8 @@ describe("ComplaintForm", () => {
     expect(screen.getByText("Title is required")).toBeInTheDocument();
     expect(screen.getByText("Description is required")).toBeInTheDocument();
     expect(screen.getByText("Please choose a category")).toBeInTheDocument();
+
+    await screen.findByRole("option", { name: "Pothole" });
   });
 
   test("loads categories from API", async () => {
@@ -57,22 +77,13 @@ describe("ComplaintForm", () => {
 
   test("submits valid complaint with bearer token", async () => {
     render(<ComplaintForm />);
-
-    fireEvent.change(screen.getByLabelText(/title/i), {
-      target: { value: "Road damage" },
-    });
-    fireEvent.change(screen.getByLabelText(/description/i), {
-      target: { value: "Large pothole near the market" },
-    });
-    fireEvent.change(screen.getByLabelText(/category/i), {
-      target: { value: "1" },
-    });
+    await fillValidForm();
 
     fireEvent.click(screen.getByRole("button", { name: /submit/i }));
 
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining("/complaints"),
+        "http://localhost:8000/complaints",
         expect.objectContaining({
           method: "POST",
           headers: expect.objectContaining({
@@ -85,16 +96,7 @@ describe("ComplaintForm", () => {
 
   test("shows success message after submission", async () => {
     render(<ComplaintForm />);
-
-    fireEvent.change(screen.getByLabelText(/title/i), {
-      target: { value: "Road damage" },
-    });
-    fireEvent.change(screen.getByLabelText(/description/i), {
-      target: { value: "Large pothole near the market" },
-    });
-    fireEvent.change(screen.getByLabelText(/category/i), {
-      target: { value: "1" },
-    });
+    await fillValidForm();
 
     fireEvent.click(screen.getByRole("button", { name: /submit/i }));
 

@@ -1,4 +1,5 @@
 import { Link, Routes, Route } from "react-router-dom";
+import ComplaintForm from "./features/citizen/ComplaintForm";
 
 /** Displays the CivicWatch home page. */
 function Home() {
@@ -11,23 +12,12 @@ function Home() {
   );
 }
 
-/** Displays the placeholder for the complaint reporting page. */
-function Report() {
-  return (
-    <main>
-      <h1>Report a Complaint</h1>
-      <p>The complaint form will be added here.</p>
-      <Link to="/">Back to Home</Link>
-    </main>
-  );
-}
-
-/** Defines the application routes. Teammates add their own routes here. */
+/** Defines the application routes. */
 function App() {
   return (
     <Routes>
       <Route path="/" element={<Home />} />
-      <Route path="/report" element={<Report />} />
+      <Route path="/report" element={<ComplaintForm />} />
     </Routes>
   );
 }
