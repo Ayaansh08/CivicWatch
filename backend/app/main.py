@@ -4,11 +4,12 @@ Main entry point for the CivicWatch FastAPI application.
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from backend.app.platform.auth_router import router as auth_router
+from backend.app.citizen.router import router as citizen_router
 
-# Create the FastAPI application instance
+# Create the FastAPI application instance.
 app = FastAPI(title="CivicWatch API", version="1.0.0")
 
-# Allow the React frontend running on port 5173 to call this API
+# Allow the React frontend to call this API.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173"],
@@ -17,12 +18,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Register the auth router — adds /auth/register, /auth/login, /auth/me
+# Register the application routers.
 app.include_router(auth_router)
+app.include_router(citizen_router)
 
 
 @app.get("/health")
 def health_check():
-    """Return a simple status message so teammates can confirm the API is running."""
-    # Return a JSON object with status ok
+    """Return a simple status message."""
     return {"status": "ok"}
