@@ -4,17 +4,7 @@ Tests empty input, single cluster meeting threshold, cluster below threshold,
 multiple clusters sorted by density, and dictionary structure of output.
 """
 
-import sys
-from pathlib import Path
-import pytest
-
-# Add backend directory to sys.path so app modules can be imported
-backend_dir = Path(__file__).resolve().parents[2]
-if str(backend_dir) not in sys.path:
-    sys.path.insert(0, str(backend_dir))
-
-# Import find_hotspots function
-from app.geo.hotspot import find_hotspots
+from backend.app.geo.hotspot import find_hotspots
 
 
 def test_find_hotspots_returns_empty_list_for_empty_complaints():

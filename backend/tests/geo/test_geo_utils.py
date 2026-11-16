@@ -4,17 +4,8 @@ Tests haversine distance calculation, bounding box generation,
 point-in-bounding-box check, and coordinate validation.
 """
 
-import sys
-from pathlib import Path
 import pytest
-
-# Add backend directory to sys.path so app modules can be imported
-backend_dir = Path(__file__).resolve().parents[2]
-if str(backend_dir) not in sys.path:
-    sys.path.insert(0, str(backend_dir))
-
-# Import functions from geo_utils
-from app.geo.geo_utils import (
+from backend.app.geo.geo_utils import (
     haversine_distance_km,
     bounding_box,
     is_within_bbox,
