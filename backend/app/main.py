@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from backend.app.platform.auth_router import router as auth_router
 from backend.app.citizen.router import router as citizen_router
+from backend.app.geo.router import router as geo_router
 
 # Create the FastAPI application instance.
 app = FastAPI(title="CivicWatch API", version="1.0.0")
@@ -21,6 +22,7 @@ app.add_middleware(
 # Register the application routers.
 app.include_router(auth_router)
 app.include_router(citizen_router)
+app.include_router(geo_router)
 
 
 @app.get("/health")
