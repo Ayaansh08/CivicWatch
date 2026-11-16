@@ -4,6 +4,7 @@ Main entry point for the CivicWatch FastAPI application.
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from backend.app.platform.auth_router import router as auth_router
+from backend.app.authority.router import router as authority_router
 
 # Create the FastAPI application instance
 app = FastAPI(title="CivicWatch API", version="1.0.0")
@@ -19,6 +20,9 @@ app.add_middleware(
 
 # Register the auth router — adds /auth/register, /auth/login, /auth/me
 app.include_router(auth_router)
+
+# Register the authority router — adds /authority/ping (CW-302)
+app.include_router(authority_router)
 
 
 @app.get("/health")
