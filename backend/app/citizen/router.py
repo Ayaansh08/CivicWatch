@@ -18,10 +18,24 @@ from backend.app.citizen.schemas import (
     StatusHistoryResponse,
 )
 
-# Directory where uploaded complaint photos are stored
+# Constants for photo uploads
 UPLOAD_DIR = "backend/uploads"
+MAX_PHOTO_SIZE = 2 * 1024 * 1024  # 2 MB
+ALLOWED_EXTENSIONS = [".jpg", ".jpeg", ".png"]
 
 router = APIRouter(prefix="/complaints", tags=["Citizen Complaints"])
+
+
+def get_owned_complaint_or_error(
+    db: Session, complaint_id: int, user: User, action: str = "access"
+) -> Complaint:
+    """Retrieve complaint owned by user or raise 404/403."""
+    complaint = db.query(Complaint).filter(Complaint.id == complaint_id).first()
+    if not complaint:
+        raise HTTPException(status_code=404, detail="Complaint not found")
+    if complaint.user_id != user.id:
+        raise HTTPException(status_code=403, detail=f"Not authorized to {action} this complaint")
+    return complaint
 
 
 @router.post("", response_model=ComplaintResponse, status_code=201)
@@ -148,14 +162,7 @@ def get_complaint_history(
     current_user: User = Depends(get_current_user),
 ):
     """Retrieve status history for a complaint owned by the citizen in chronological order."""
-    complaint = db.query(Complaint).filter(Complaint.id == complaint_id).first()
-    if not complaint:
-        raise HTTPException(status_code=404, detail="Complaint not found")
-
-    if complaint.user_id != current_user.id:
-        raise HTTPException(
-            status_code=403, detail="Not authorized to view history for this complaint"
-        )
+    get_owned_complaint_or_error(db, complaint_id, current_user, "view history for")
 
     history = (
         db.query(StatusHistory)
@@ -174,14 +181,7 @@ def submit_complaint_feedback(
     current_user: User = Depends(get_current_user),
 ):
     """Submit rating and optional comment for a resolved complaint."""
-    complaint = db.query(Complaint).filter(Complaint.id == complaint_id).first()
-    if not complaint:
-        raise HTTPException(status_code=404, detail="Complaint not found")
-
-    if complaint.user_id != current_user.id:
-        raise HTTPException(
-            status_code=403, detail="Not authorized to provide feedback on this complaint"
-        )
+    complaint = get_owned_complaint_or_error(db, complaint_id, current_user, "provide feedback on")
 
     if complaint.status != "Resolved":
         raise HTTPException(
@@ -216,12 +216,7 @@ def reopen_complaint(
     Reopen a resolved complaint.
     Reopen is a citizen action so it does not use the officer state machine.
     """
-    complaint = db.query(Complaint).filter(Complaint.id == complaint_id).first()
-    if not complaint:
-        raise HTTPException(status_code=404, detail="Complaint not found")
-
-    if complaint.user_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Not authorized to reopen this complaint")
+    complaint = get_owned_complaint_or_error(db, complaint_id, current_user, "reopen")
 
     if complaint.status != "Resolved":
         raise HTTPException(status_code=400, detail="Only resolved complaints can be reopened")
@@ -269,28 +264,21 @@ def upload_complaint_photo(
     current_user: User = Depends(get_current_user),
 ):
     """Upload a photo for a complaint owned by the current citizen."""
-    # Look up the complaint in the database
-    complaint = db.query(Complaint).filter(Complaint.id == complaint_id).first()
-    if not complaint:
-        raise HTTPException(status_code=404, detail="Complaint not found")
-
-    # Check ownership
-    if complaint.user_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Not authorized to edit this complaint")
+    complaint = get_owned_complaint_or_error(db, complaint_id, current_user, "edit")
 
     # Validate file extension
     filename = file.filename or ""
     _, ext = os.path.splitext(filename.lower())
-    if ext not in [".jpg", ".jpeg", ".png"]:
+    if ext not in ALLOWED_EXTENSIONS:
         raise HTTPException(status_code=400, detail="Only JPG and PNG files are allowed")
 
     # Validate content type
     if file.content_type not in ["image/jpeg", "image/png"]:
         raise HTTPException(status_code=400, detail="Invalid image content type")
 
-    # Read file content and check size (max 2 MB = 2 * 1024 * 1024 bytes)
+    # Read file content and check size (max 2 MB)
     content = file.file.read()
-    if len(content) > 2 * 1024 * 1024:
+    if len(content) > MAX_PHOTO_SIZE:
         raise HTTPException(status_code=400, detail="Image must be under 2 MB")
 
     # Save to UPLOAD_DIR with unique uuid

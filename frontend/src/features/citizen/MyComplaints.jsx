@@ -3,28 +3,9 @@ import { Link } from "react-router-dom";
 import { fetchMyComplaints, fetchHistory, fetchCategories } from "./api";
 import StatusTimeline from "./StatusTimeline";
 import FeedbackPanel from "./FeedbackPanel";
+import StatusBadge from "./StatusBadge";
 import { TOKEN_KEY } from "../../config";
 import "./citizen.css";
-
-// Helper for status badge styling
-function getStatusBadgeStyle(status) {
-  switch (status) {
-    case "Submitted":
-      return { backgroundColor: "#e3f2fd", color: "#0d47a1" };
-    case "Under Review":
-      return { backgroundColor: "#fff8e1", color: "#f57f17" };
-    case "Assigned":
-      return { backgroundColor: "#ede7f6", color: "#4a148c" };
-    case "In Progress":
-      return { backgroundColor: "#e0f2f1", color: "#004d40" };
-    case "Resolved":
-      return { backgroundColor: "#e8f5e9", color: "#1b5e20" };
-    case "Rejected":
-      return { backgroundColor: "#ffebee", color: "#b71c1c" };
-    default:
-      return { backgroundColor: "#eee", color: "#333" };
-  }
-}
 
 /**
  * Citizen dashboard displaying their submitted complaints, badges, and timelines.
@@ -174,18 +155,7 @@ export default function MyComplaints() {
             >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <h3 style={{ margin: 0 }}>{c.title}</h3>
-                <span
-                  className="status-badge"
-                  style={{
-                    padding: "4px 8px",
-                    borderRadius: "4px",
-                    fontWeight: "bold",
-                    fontSize: "12px",
-                    ...getStatusBadgeStyle(c.status),
-                  }}
-                >
-                  {c.status}
-                </span>
+                <StatusBadge status={c.status} />
               </div>
               <p style={{ margin: "8px 0" }}>{c.description}</p>
               <div style={{ fontSize: "13px", color: "#666" }}>

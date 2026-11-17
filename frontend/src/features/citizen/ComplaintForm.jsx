@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { createComplaint, fetchCategories, uploadPhoto } from "./api";
 import PhotoPicker from "./PhotoPicker";
 import LocationPicker from "./LocationPicker";
+import FormField from "./FormField";
 import "./citizen.css";
 
 function ComplaintForm() {
@@ -126,32 +127,25 @@ function ComplaintForm() {
       <h1>Report a Complaint</h1>
 
       <form onSubmit={handleSubmit} noValidate>
-        <div className="form-field">
-          <label htmlFor="title">Title</label>
+        <FormField id="title" label="Title" error={errors.title}>
           <input
             id="title"
             name="title"
             value={form.title}
             onChange={handleChange}
           />
-          {errors.title && <p role="alert">{errors.title}</p>}
-        </div>
+        </FormField>
 
-        <div className="form-field">
-          <label htmlFor="description">Description</label>
+        <FormField id="description" label="Description" error={errors.description}>
           <textarea
             id="description"
             name="description"
             value={form.description}
             onChange={handleChange}
           />
-          {errors.description && (
-            <p role="alert">{errors.description}</p>
-          )}
-        </div>
+        </FormField>
 
-        <div className="form-field">
-          <label htmlFor="category_id">Category</label>
+        <FormField id="category_id" label="Category" error={errors.category_id}>
           <select
             id="category_id"
             name="category_id"
@@ -165,10 +159,7 @@ function ComplaintForm() {
               </option>
             ))}
           </select>
-          {errors.category_id && (
-            <p role="alert">{errors.category_id}</p>
-          )}
-        </div>
+        </FormField>
 
         <div className="form-field">
           <LocationPicker
