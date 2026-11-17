@@ -1,6 +1,22 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import ComplaintForm from "../../features/citizen/ComplaintForm";
 
+// Mock LocationPicker so Leaflet doesn't fail in JSDOM
+jest.mock("../../features/citizen/LocationPicker", () => {
+  return function MockLocationPicker({ onLocationChange }) {
+    return (
+      <div data-testid="location-picker">
+        <button
+          type="button"
+          onClick={() => onLocationChange(28.62, 77.36)}
+        >
+          Mock Pick Location
+        </button>
+      </div>
+    );
+  };
+});
+
 beforeEach(() => {
   localStorage.setItem("token", "test-token");
 
@@ -50,8 +66,7 @@ describe("ComplaintForm", () => {
     expect(screen.getByLabelText(/title/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/description/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/category/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/latitude/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/longitude/i)).toBeInTheDocument();
+    expect(screen.getByTestId("location-picker")).toBeInTheDocument();
 
     await screen.findByRole("option", { name: "Pothole" });
   });

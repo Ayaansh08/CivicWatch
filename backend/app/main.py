@@ -1,14 +1,22 @@
 """
 Main entry point for the CivicWatch FastAPI application.
 """
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from backend.app.platform.auth_router import router as auth_router
 from backend.app.citizen.router import router as citizen_router
 from backend.app.geo.router import router as geo_router
 
+# Ensure uploads directory exists
+os.makedirs("backend/uploads", exist_ok=True)
+
 # Create the FastAPI application instance.
 app = FastAPI(title="CivicWatch API", version="1.0.0")
+
+# Mount uploads directory for static file access
+app.mount("/uploads", StaticFiles(directory="backend/uploads"), name="uploads")
 
 # Allow the React frontend to call this API.
 app.add_middleware(

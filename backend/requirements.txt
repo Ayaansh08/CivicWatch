@@ -12,3 +12,4 @@ pytest-cov
 flake8
 email-validator
 pydantic[email]
+python-multipart
