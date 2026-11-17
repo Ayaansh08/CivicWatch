@@ -45,3 +45,29 @@ export async function register(name, email, password) {
 
   return data;
 }
+
+/**
+ * Fetch the currently logged-in user's profile using their Bearer token.
+ * Attaches the HTTP status code to the thrown Error when the request fails.
+ */
+export async function getCurrentUser(token) {
+  // Send a GET request to /auth/me with the Bearer token header
+  const response = await fetch(`${API_URL}/auth/me`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  // Parse the JSON response body
+  const data = await response.json();
+
+  // Throw an Error carrying the HTTP status when authentication fails
+  if (!response.ok) {
+    const error = new Error(data.detail || "Unable to verify user");
+    error.status = response.status;
+    throw error;
+  }
+
+  return data;
+}

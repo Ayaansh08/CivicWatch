@@ -85,3 +85,10 @@
   font-size: 0.9rem;
   text-align: center;
 }
+
+.auth-status {
+  padding: 16px;
+  text-align: center;
+  font-family: sans-serif;
+  color: #374151;
+}
