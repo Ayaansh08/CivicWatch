@@ -94,7 +94,8 @@ describe("MyComplaints component", () => {
     );
 
     expect(await screen.findByText("Broken Bench in Park")).toBeInTheDocument();
-    expect(screen.getByText("In Progress")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Broken Bench in Park" })).toBeInTheDocument();
+    expect(screen.getByText("Category: Parks")).toBeInTheDocument();
 
     // Click complaint card to load timeline
     fireEvent.click(screen.getByText("Broken Bench in Park"));

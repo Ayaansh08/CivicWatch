@@ -179,10 +179,14 @@ def submit_complaint_feedback(
         raise HTTPException(status_code=404, detail="Complaint not found")
 
     if complaint.user_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Not authorized to provide feedback on this complaint")
+        raise HTTPException(
+            status_code=403, detail="Not authorized to provide feedback on this complaint"
+        )
 
     if complaint.status != "Resolved":
-        raise HTTPException(status_code=400, detail="Feedback can only be submitted for resolved complaints")
+        raise HTTPException(
+            status_code=400, detail="Feedback can only be submitted for resolved complaints"
+        )
 
     existing_feedback = db.query(Feedback).filter(Feedback.complaint_id == complaint_id).first()
     if existing_feedback:
