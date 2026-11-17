@@ -8,6 +8,7 @@ from fastapi.staticfiles import StaticFiles
 from backend.app.platform.auth_router import router as auth_router
 from backend.app.citizen.router import router as citizen_router
 from backend.app.geo.router import router as geo_router
+from backend.app.authority.router import router as authority_router
 
 # Ensure uploads directory exists
 os.makedirs("backend/uploads", exist_ok=True)
@@ -31,6 +32,8 @@ app.add_middleware(
 app.include_router(auth_router)
 app.include_router(citizen_router)
 app.include_router(geo_router)
+# Register the authority router — adds /authority/* endpoints (CW-302+)
+app.include_router(authority_router)
 
 
 @app.get("/health")
