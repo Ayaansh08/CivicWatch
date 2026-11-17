@@ -2,6 +2,8 @@ import React, { lazy, Suspense } from "react";
 import { Routes, Route } from "react-router-dom";
 import ComplaintForm from "./features/citizen/ComplaintForm";
 import MyComplaints from "./features/citizen/MyComplaints";
+import LoginPage from "./features/auth/LoginPage";
+import RegisterPage from "./features/auth/RegisterPage";
 
 const MapView = lazy(() => import("./features/geo/MapView"));
 
@@ -19,6 +21,8 @@ function App() {
   return (
     <Routes>
       <Route path="/" element={<Home />} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
       <Route path="/report" element={<ComplaintForm />} />
       <Route path="/my-complaints" element={<MyComplaints />} />
       <Route
