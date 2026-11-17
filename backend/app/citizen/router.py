@@ -1,11 +1,16 @@
 """API routes for citizen complaint operations."""
-from fastapi import APIRouter, Depends, HTTPException
+import os
+import uuid
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
 
 from backend.app.platform.database import get_db
 from backend.app.platform.deps import get_current_user
 from backend.app.platform.models import Category, Complaint, User
 from backend.app.citizen.schemas import ComplaintCreate, ComplaintResponse
+
+# Directory where uploaded complaint photos are stored
+UPLOAD_DIR = "backend/uploads"
 
 router = APIRouter(prefix="/complaints", tags=["Citizen Complaints"])
 
@@ -54,6 +59,7 @@ def create_complaint(
         "priority": new_complaint.priority,
         "latitude": new_complaint.latitude,
         "longitude": new_complaint.longitude,
+        "photo_path": new_complaint.photo_path,
         "user_id": new_complaint.user_id,
     }
 
@@ -70,3 +76,67 @@ def get_complaint_categories(db: Session = Depends(get_db)):
         {"id": category.id, "name": category.name}
         for category in categories
     ]
+
+
+@router.post("/{complaint_id}/photo", response_model=ComplaintResponse)
+def upload_complaint_photo(
+    complaint_id: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Upload a photo for a complaint owned by the current citizen."""
+    # Look up the complaint in the database
+    complaint = db.query(Complaint).filter(Complaint.id == complaint_id).first()
+    if not complaint:
+        raise HTTPException(status_code=404, detail="Complaint not found")
+
+    # Check ownership
+    if complaint.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to edit this complaint")
+
+    # Validate file extension
+    filename = file.filename or ""
+    _, ext = os.path.splitext(filename.lower())
+    if ext not in [".jpg", ".jpeg", ".png"]:
+        raise HTTPException(status_code=400, detail="Only JPG and PNG files are allowed")
+
+    # Validate content type
+    if file.content_type not in ["image/jpeg", "image/png"]:
+        raise HTTPException(status_code=400, detail="Invalid image content type")
+
+    # Read file content and check size (max 2 MB = 2 * 1024 * 1024 bytes)
+    content = file.file.read()
+    if len(content) > 2 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Image must be under 2 MB")
+
+    # Save to UPLOAD_DIR with unique uuid
+    os.makedirs(UPLOAD_DIR, exist_ok=True)
+    saved_filename = f"{uuid.uuid4().hex}{ext}"
+    file_path = os.path.join(UPLOAD_DIR, saved_filename)
+    with open(file_path, "wb") as f:
+        f.write(content)
+
+    # Update complaint photo path
+    photo_url = f"/uploads/{saved_filename}"
+    complaint.photo_path = photo_url
+    db.commit()
+    db.refresh(complaint)
+
+    # Get category name
+    category = db.query(Category).filter(Category.id == complaint.category_id).first()
+    category_name = category.name if category else ""
+
+    return {
+        "id": complaint.id,
+        "title": complaint.title,
+        "description": complaint.description,
+        "category_id": complaint.category_id,
+        "category_name": category_name,
+        "status": complaint.status,
+        "priority": complaint.priority,
+        "latitude": complaint.latitude,
+        "longitude": complaint.longitude,
+        "photo_path": complaint.photo_path,
+        "user_id": complaint.user_id,
+    }

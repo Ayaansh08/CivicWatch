@@ -24,4 +24,5 @@ class ComplaintResponse(BaseModel):
     priority: str
     latitude: float | None
     longitude: float | None
+    photo_path: str | None = None
     user_id: int

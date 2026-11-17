@@ -76,6 +76,33 @@ def test_category():
 
 
 @pytest.fixture
+def other_user():
+    """Create and return a second citizen user for tests."""
+    db = TestingSessionLocal()
+    user = User(
+        name="Other Citizen",
+        email="other@example.com",
+        password_hash="test-hash-2",
+        role="citizen",
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    db.expunge(user)
+    db.close()
+    return user
+
+
+@pytest.fixture
+def other_authenticated_client(other_user):
+    """Return a client that acts as the second citizen."""
+    def client_factory():
+        app.dependency_overrides[get_current_user] = lambda: other_user
+        return TestClient(app)
+    return client_factory
+
+
+@pytest.fixture
 def authenticated_client(test_user):
     """Return a client that acts as the test citizen."""
     app.dependency_overrides[get_current_user] = lambda: test_user

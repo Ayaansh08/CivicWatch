@@ -39,3 +39,24 @@ export async function createComplaint(complaintData) {
 
   return response.json();
 }
+
+/** Upload a photo for a complaint. */
+export async function uploadPhoto(complaintId, file) {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await fetch(`${API_URL}/complaints/${complaintId}/photo`, {
+    method: "POST",
+    headers: {
+      ...getAuthHeaders(),
+    },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.detail || "Unable to upload photo");
+  }
+
+  return response.json();
+}

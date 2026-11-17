@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { createComplaint, fetchCategories } from "./api";
+import { createComplaint, fetchCategories, uploadPhoto } from "./api";
+import PhotoPicker from "./PhotoPicker";
 import "./citizen.css";
 
 function ComplaintForm() {
@@ -12,6 +13,8 @@ function ComplaintForm() {
   });
 
   const [categories, setCategories] = useState([]);
+  const [photo, setPhoto] = useState(null);
+  const [photoError, setPhotoError] = useState("");
   const [errors, setErrors] = useState({});
   const [message, setMessage] = useState("");
   const [apiError, setApiError] = useState("");
@@ -83,7 +86,14 @@ function ComplaintForm() {
     setLoading(true);
 
     try {
-      await createComplaint(complaintData);
+      const created = await createComplaint(complaintData);
+      if (photo && created && created.id) {
+        try {
+          await uploadPhoto(created.id, photo);
+        } catch (uploadErr) {
+          // Keep successful complaint message, log or notify photo error
+        }
+      }
       setMessage("Complaint submitted");
       setForm({
         title: "",
@@ -92,6 +102,8 @@ function ComplaintForm() {
         latitude: "",
         longitude: "",
       });
+      setPhoto(null);
+      setPhotoError("");
       setErrors({});
     } catch (error) {
       setApiError(error.message);
@@ -172,6 +184,13 @@ function ComplaintForm() {
             onChange={handleChange}
           />
         </div>
+
+        <PhotoPicker
+          file={photo}
+          onFileChange={setPhoto}
+          error={photoError}
+          onErrorChange={setPhotoError}
+        />
 
         <button type="submit" disabled={loading}>
           {loading ? "Submitting..." : "Submit"}
