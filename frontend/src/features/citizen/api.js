@@ -97,3 +97,41 @@ export async function fetchHistory(complaintId) {
 
   return response.json();
 }
+
+/** Submit feedback rating and comment. */
+export async function submitFeedback(complaintId, rating, comment = null) {
+  const response = await fetch(`${API_URL}/complaints/${complaintId}/feedback`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
+    },
+    body: JSON.stringify({ rating, comment }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.detail || "Unable to submit feedback");
+  }
+
+  return response.json();
+}
+
+/** Reopen a resolved complaint. */
+export async function reopenComplaint(complaintId, reason) {
+  const response = await fetch(`${API_URL}/complaints/${complaintId}/reopen`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
+    },
+    body: JSON.stringify({ reason }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.detail || "Unable to reopen complaint");
+  }
+
+  return response.json();
+}

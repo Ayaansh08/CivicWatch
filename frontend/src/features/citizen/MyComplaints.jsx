@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { fetchMyComplaints, fetchHistory } from "./api";
 import StatusTimeline from "./StatusTimeline";
+import FeedbackPanel from "./FeedbackPanel";
 import { TOKEN_KEY } from "../../config";
 import "./citizen.css";
 
@@ -147,6 +148,13 @@ export default function MyComplaints() {
                     </div>
                   )}
                   {historyLoading ? <p>Loading timeline...</p> : <StatusTimeline history={history} />}
+                  <FeedbackPanel
+                    complaint={c}
+                    onComplaintUpdated={() => {
+                      fetchMyComplaints().then(setComplaints);
+                      fetchHistory(c.id).then(setHistory);
+                    }}
+                  />
                 </div>
               )}
             </div>
