@@ -5,7 +5,6 @@ from fastapi.testclient import TestClient
 from backend.app.main import app
 from backend.app.citizen.history import add_history
 from backend.app.platform.models import Category, Complaint
-from backend.tests.citizen.conftest import TestingSessionLocal
 
 
 @pytest.fixture
@@ -71,7 +70,9 @@ def test_citizen_end_to_end_journey(real_auth_client, db_session):
     # 5. Upload small PNG
     png_data = b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR"
     files = {"file": ("pothole.png", io.BytesIO(png_data), "image/png")}
-    upload_res = real_auth_client.post(f"/complaints/{complaint_id}/photo", headers=headers, files=files)
+    upload_res = real_auth_client.post(
+        f"/complaints/{complaint_id}/photo", headers=headers, files=files
+    )
     assert upload_res.status_code == 200
     assert upload_res.json()["photo_path"].startswith("/uploads/")
 
@@ -94,7 +95,12 @@ def test_citizen_end_to_end_journey(real_auth_client, db_session):
     comp = db_session.query(Complaint).filter(Complaint.id == complaint_id).first()
     comp.status = "Resolved"
     db_session.commit()
-    add_history(db_session, complaint_id=complaint_id, status="Resolved", note="Pothole filled with asphalt")
+    add_history(
+        db_session,
+        complaint_id=complaint_id,
+        status="Resolved",
+        note="Pothole filled with asphalt",
+    )
 
     # 9. Rate feedback
     fb_res = real_auth_client.post(f"/complaints/{complaint_id}/feedback", headers=headers, json={
