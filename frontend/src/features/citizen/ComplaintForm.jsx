@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { createComplaint, fetchCategories, uploadPhoto } from "./api";
 import PhotoPicker from "./PhotoPicker";
+import LocationPicker from "./LocationPicker";
 import "./citizen.css";
 
 function ComplaintForm() {
@@ -41,6 +42,14 @@ function ComplaintForm() {
       [name]: value,
     }));
   }
+
+  const handleLocationChange = useCallback((lat, lng) => {
+    setForm((previous) => ({
+      ...previous,
+      latitude: lat,
+      longitude: lng,
+    }));
+  }, []);
 
   function validateForm() {
     const newErrors = {};
@@ -162,26 +171,10 @@ function ComplaintForm() {
         </div>
 
         <div className="form-field">
-          <label htmlFor="latitude">Latitude (optional)</label>
-          <input
-            id="latitude"
-            name="latitude"
-            type="number"
-            step="any"
-            value={form.latitude}
-            onChange={handleChange}
-          />
-        </div>
-
-        <div className="form-field">
-          <label htmlFor="longitude">Longitude (optional)</label>
-          <input
-            id="longitude"
-            name="longitude"
-            type="number"
-            step="any"
-            value={form.longitude}
-            onChange={handleChange}
+          <LocationPicker
+            latitude={form.latitude}
+            longitude={form.longitude}
+            onLocationChange={handleLocationChange}
           />
         </div>
 
