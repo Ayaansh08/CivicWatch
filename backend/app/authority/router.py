@@ -5,13 +5,12 @@ Endpoints for listing, reviewing, assigning and updating complaints.
 """
 import datetime
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from backend.app.platform.database import get_db
 from backend.app.platform.models import User, Complaint, Category, Department
-from backend.app.platform.deps import get_current_user
 from backend.app.authority.permissions import require_officer
 from backend.app.authority.workflow import validate_transition, InvalidTransition
 from backend.app.citizen.history import add_history
@@ -78,7 +77,7 @@ def ping():
 
 @router.get("/complaints")
 def list_complaints(
-    status: Optional[str] = Query(None),
+    status_filter: Optional[str] = Query(None, alias="status"),
     category_id: Optional[int] = Query(None),
     sort: Optional[str] = Query("newest"),
     db: Session = Depends(get_db),
@@ -103,8 +102,8 @@ def list_complaints(
     )
 
     # Apply optional status filter
-    if status:
-        query = query.filter(Complaint.status == status)
+    if status_filter:
+        query = query.filter(Complaint.status == status_filter)
     # Apply optional category filter
     if category_id:
         query = query.filter(Complaint.category_id == category_id)

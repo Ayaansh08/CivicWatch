@@ -1,5 +1,4 @@
 """Tests for the Assign and Departments endpoints (CW-304)."""
-import pytest
 from backend.app.citizen.models import StatusHistory
 
 
