@@ -7,7 +7,13 @@ from sqlalchemy.orm import Session
 from backend.app.platform.database import get_db
 from backend.app.platform.deps import get_current_user
 from backend.app.platform.models import Category, Complaint, User
-from backend.app.citizen.schemas import ComplaintCreate, ComplaintResponse
+from backend.app.citizen.models import StatusHistory, Feedback
+from backend.app.citizen.history import add_history
+from backend.app.citizen.schemas import (
+    ComplaintCreate,
+    ComplaintResponse,
+    StatusHistoryResponse,
+)
 
 # Directory where uploaded complaint photos are stored
 UPLOAD_DIR = "backend/uploads"
@@ -48,6 +54,9 @@ def create_complaint(
     db.commit()
     db.refresh(new_complaint)
 
+    # Record the initial Submitted status in history
+    add_history(db, complaint_id=new_complaint.id, status="Submitted")
+
     # Return the saved complaint with its category name.
     return {
         "id": new_complaint.id,
@@ -60,6 +69,8 @@ def create_complaint(
         "latitude": new_complaint.latitude,
         "longitude": new_complaint.longitude,
         "photo_path": new_complaint.photo_path,
+        "rating": None,
+        "created_at": new_complaint.created_at,
         "user_id": new_complaint.user_id,
     }
 
@@ -76,6 +87,80 @@ def get_complaint_categories(db: Session = Depends(get_db)):
         {"id": category.id, "name": category.name}
         for category in categories
     ]
+
+
+@router.get("/mine", response_model=list[ComplaintResponse])
+def get_my_complaints(
+    status: str | None = None,
+    category_id: int | None = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Retrieve all complaints submitted by the logged-in citizen, newest first."""
+    query = db.query(Complaint).filter(Complaint.user_id == current_user.id)
+
+    # Validate and filter by status if provided
+    valid_statuses = [
+        "Submitted", "Under Review", "Assigned", "In Progress", "Resolved", "Rejected"
+    ]
+    if status is not None:
+        if status not in valid_statuses:
+            raise HTTPException(status_code=422, detail="Invalid status filter")
+        query = query.filter(Complaint.status == status)
+
+    # Filter by category if provided
+    if category_id is not None:
+        query = query.filter(Complaint.category_id == category_id)
+
+    # Sort newest first
+    complaints = query.order_by(Complaint.created_at.desc()).all()
+
+    # Build response with category_name and rating
+    results = []
+    for c in complaints:
+        cat = db.query(Category).filter(Category.id == c.category_id).first()
+        fb = db.query(Feedback).filter(Feedback.complaint_id == c.id).first()
+        results.append({
+            "id": c.id,
+            "title": c.title,
+            "description": c.description,
+            "category_id": c.category_id,
+            "category_name": cat.name if cat else "",
+            "status": c.status,
+            "priority": c.priority,
+            "latitude": c.latitude,
+            "longitude": c.longitude,
+            "photo_path": c.photo_path,
+            "rating": fb.rating if fb else None,
+            "created_at": c.created_at,
+            "user_id": c.user_id,
+        })
+    return results
+
+
+@router.get("/{complaint_id}/history", response_model=list[StatusHistoryResponse])
+def get_complaint_history(
+    complaint_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Retrieve status history for a complaint owned by the citizen in chronological order."""
+    complaint = db.query(Complaint).filter(Complaint.id == complaint_id).first()
+    if not complaint:
+        raise HTTPException(status_code=404, detail="Complaint not found")
+
+    if complaint.user_id != current_user.id:
+        raise HTTPException(
+            status_code=403, detail="Not authorized to view history for this complaint"
+        )
+
+    history = (
+        db.query(StatusHistory)
+        .filter(StatusHistory.complaint_id == complaint_id)
+        .order_by(StatusHistory.changed_at.asc())
+        .all()
+    )
+    return history
 
 
 @router.post("/{complaint_id}/photo", response_model=ComplaintResponse)

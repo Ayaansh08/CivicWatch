@@ -1,5 +1,17 @@
 """Request and response schemas for citizen complaints."""
+import datetime
 from pydantic import BaseModel, Field
+
+
+class StatusHistoryResponse(BaseModel):
+    """Schema for a complaint status history entry."""
+
+    id: int
+    complaint_id: int
+    status: str
+    note: str | None = None
+    changed_by: int | None = None
+    changed_at: datetime.datetime
 
 
 class ComplaintCreate(BaseModel):
@@ -25,4 +37,6 @@ class ComplaintResponse(BaseModel):
     latitude: float | None
     longitude: float | None
     photo_path: str | None = None
+    rating: int | None = None
+    created_at: datetime.datetime | None = None
     user_id: int

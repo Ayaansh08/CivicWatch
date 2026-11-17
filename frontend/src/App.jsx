@@ -1,6 +1,7 @@
 import React, { lazy, Suspense } from "react";
 import { Routes, Route } from "react-router-dom";
 import ComplaintForm from "./features/citizen/ComplaintForm";
+import MyComplaints from "./features/citizen/MyComplaints";
 
 const MapView = lazy(() => import("./features/geo/MapView"));
 
@@ -19,6 +20,7 @@ function App() {
     <Routes>
       <Route path="/" element={<Home />} />
       <Route path="/report" element={<ComplaintForm />} />
+      <Route path="/my-complaints" element={<MyComplaints />} />
       <Route
         path="/map"
         element={

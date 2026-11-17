@@ -99,8 +99,8 @@ function ComplaintForm() {
       if (photo && created && created.id) {
         try {
           await uploadPhoto(created.id, photo);
-        } catch (uploadErr) {
-          // Keep successful complaint message, log or notify photo error
+        } catch {
+          // Keep successful complaint message, ignore photo error
         }
       }
       setMessage("Complaint submitted");

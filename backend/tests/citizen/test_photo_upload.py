@@ -1,7 +1,6 @@
 """Tests for complaint photo upload endpoint."""
 import io
 from backend.app.citizen import router as citizen_router
-from backend.app.platform.models import User, Complaint
 
 
 def test_upload_valid_png_returns_200_and_sets_photo_path(

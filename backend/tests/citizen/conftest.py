@@ -8,6 +8,7 @@ from sqlalchemy.pool import StaticPool
 
 from backend.app.main import app
 from backend.app.platform import models  # noqa: F401
+from backend.app.citizen import models as citizen_models  # noqa: F401
 from backend.app.platform.database import Base, get_db
 from backend.app.platform.deps import get_current_user
 from backend.app.platform.models import User, Category
@@ -42,6 +43,16 @@ def setup_test_db():
     app.dependency_overrides.pop(get_current_user, None)
     app.dependency_overrides.pop(get_db, None)
     Base.metadata.drop_all(bind=engine)
+
+
+@pytest.fixture
+def db_session():
+    """Provide a direct database session for tests to query/mutate tables."""
+    db = TestingSessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 
 @pytest.fixture
@@ -91,6 +102,15 @@ def other_user():
     db.expunge(user)
     db.close()
     return user
+
+
+@pytest.fixture
+def make_authenticated_client():
+    """Return a function to produce an authenticated client for any given user."""
+    def factory(user):
+        app.dependency_overrides[get_current_user] = lambda: user
+        return TestClient(app)
+    return factory
 
 
 @pytest.fixture
