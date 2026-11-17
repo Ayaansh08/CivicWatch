@@ -24,6 +24,19 @@ class ComplaintCreate(BaseModel):
     longitude: float | None = Field(default=None, ge=-180, le=180)
 
 
+class FeedbackCreate(BaseModel):
+    """Schema for submitting feedback on a resolved complaint."""
+
+    rating: int = Field(ge=1, le=5)
+    comment: str | None = None
+
+
+class ReopenRequest(BaseModel):
+    """Schema for requesting a resolved complaint to be reopened."""
+
+    reason: str = Field(min_length=5)
+
+
 class ComplaintResponse(BaseModel):
     """Define the complaint details returned by the API."""
 

@@ -1,4 +1,5 @@
 """API routes for citizen complaint operations."""
+import datetime
 import os
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
@@ -12,6 +13,8 @@ from backend.app.citizen.history import add_history
 from backend.app.citizen.schemas import (
     ComplaintCreate,
     ComplaintResponse,
+    FeedbackCreate,
+    ReopenRequest,
     StatusHistoryResponse,
 )
 
@@ -161,6 +164,101 @@ def get_complaint_history(
         .all()
     )
     return history
+
+
+@router.post("/{complaint_id}/feedback")
+def submit_complaint_feedback(
+    complaint_id: int,
+    feedback_data: FeedbackCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Submit rating and optional comment for a resolved complaint."""
+    complaint = db.query(Complaint).filter(Complaint.id == complaint_id).first()
+    if not complaint:
+        raise HTTPException(status_code=404, detail="Complaint not found")
+
+    if complaint.user_id != current_user.id:
+        raise HTTPException(
+            status_code=403, detail="Not authorized to provide feedback on this complaint"
+        )
+
+    if complaint.status != "Resolved":
+        raise HTTPException(
+            status_code=400, detail="Feedback can only be submitted for resolved complaints"
+        )
+
+    existing_feedback = db.query(Feedback).filter(Feedback.complaint_id == complaint_id).first()
+    if existing_feedback:
+        raise HTTPException(status_code=400, detail="Feedback already submitted for this complaint")
+
+    feedback = Feedback(
+        complaint_id=complaint_id,
+        user_id=current_user.id,
+        rating=feedback_data.rating,
+        comment=feedback_data.comment,
+    )
+    db.add(feedback)
+    db.commit()
+    db.refresh(feedback)
+
+    return {"message": "Thank you for your feedback", "id": feedback.id, "rating": feedback.rating}
+
+
+@router.post("/{complaint_id}/reopen", response_model=ComplaintResponse)
+def reopen_complaint(
+    complaint_id: int,
+    reopen_data: ReopenRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Reopen a resolved complaint.
+    Reopen is a citizen action so it does not use the officer state machine.
+    """
+    complaint = db.query(Complaint).filter(Complaint.id == complaint_id).first()
+    if not complaint:
+        raise HTTPException(status_code=404, detail="Complaint not found")
+
+    if complaint.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to reopen this complaint")
+
+    if complaint.status != "Resolved":
+        raise HTTPException(status_code=400, detail="Only resolved complaints can be reopened")
+
+    # Update complaint status to Under Review
+    complaint.status = "Under Review"
+    complaint.updated_at = datetime.datetime.utcnow()
+    db.commit()
+    db.refresh(complaint)
+
+    # Add history entry
+    add_history(
+        db,
+        complaint_id=complaint.id,
+        status="Under Review",
+        note=f"Reopened by citizen: {reopen_data.reason}",
+        changed_by=current_user.id,
+    )
+
+    cat = db.query(Category).filter(Category.id == complaint.category_id).first()
+    fb = db.query(Feedback).filter(Feedback.complaint_id == complaint.id).first()
+
+    return {
+        "id": complaint.id,
+        "title": complaint.title,
+        "description": complaint.description,
+        "category_id": complaint.category_id,
+        "category_name": cat.name if cat else "",
+        "status": complaint.status,
+        "priority": complaint.priority,
+        "latitude": complaint.latitude,
+        "longitude": complaint.longitude,
+        "photo_path": complaint.photo_path,
+        "rating": fb.rating if fb else None,
+        "created_at": complaint.created_at,
+        "user_id": complaint.user_id,
+    }
 
 
 @router.post("/{complaint_id}/photo", response_model=ComplaintResponse)
