@@ -5,6 +5,7 @@ import MyComplaints from "./features/citizen/MyComplaints";
 import LoginPage from "./features/auth/LoginPage";
 import RegisterPage from "./features/auth/RegisterPage";
 import ProtectedRoute from "./features/auth/ProtectedRoute";
+import AuthorityDashboard from "./features/authority/AuthorityDashboard";
 
 const MapView = lazy(() => import("./features/geo/MapView"));
 
@@ -41,6 +42,9 @@ function App() {
         }
       />
       {/* Wrap /authority with ProtectedRoute allowedRoles={["officer", "admin"]} once Authority page is merged */}
+      <Route path="/report" element={<ComplaintForm />} />
+      <Route path="/my-complaints" element={<MyComplaints />} />
+      <Route path="/authority" element={<AuthorityDashboard />} />
       <Route
         path="/map"
         element={
