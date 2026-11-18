@@ -3,10 +3,9 @@
  */
 import React from "react";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import MapFilters from "../../features/geo/MapFilters";
 import MapView from "../../features/geo/MapView";
-import { API_URL, TOKEN_KEY } from "../../config";
+import { TOKEN_KEY } from "../../config";
 
 // Mock react-leaflet components
 jest.mock("react-leaflet", () => ({
@@ -22,6 +21,13 @@ jest.mock("react-leaflet", () => ({
 jest.mock("../../features/geo/MarkerClusterLayer", () => {
   return function MockMarkerClusterLayer({ complaints }) {
     return <div data-testid="cluster-layer" data-count={complaints ? complaints.length : 0} />;
+  };
+});
+
+// Mock HeatLayer
+jest.mock("../../features/geo/HeatLayer", () => {
+  return function MockHeatLayer() {
+    return <div data-testid="heat-layer" />;
   };
 });
 

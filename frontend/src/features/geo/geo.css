@@ -1,0 +1,62 @@
+/* Plain styling for geospatial components and maps */
+.map-view-container {
+  width: 100%;
+  margin: 0 auto;
+  font-family: sans-serif;
+}
+
+.map-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.map-view-toggle {
+  display: flex;
+  gap: 6px;
+}
+
+.map-view-toggle button {
+  padding: 6px 14px;
+  cursor: pointer;
+  border: 1px solid #ccc;
+  background-color: #f7f7f7;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.map-view-toggle button.active {
+  background-color: #0070f3;
+  color: #fff;
+  border-color: #0070f3;
+}
+
+.status-message {
+  color: #555;
+  font-size: 14px;
+  margin: 6px 0;
+}
+
+.error-message {
+  color: #d32f2f;
+  font-weight: bold;
+  font-size: 14px;
+  margin: 6px 0;
+}
+
+.empty-message {
+  color: #777;
+  font-style: italic;
+  font-size: 14px;
+  margin: 6px 0;
+}
+
+.count-message {
+  color: #333;
+  font-weight: 500;
+  font-size: 14px;
+  margin: 6px 0;
+}

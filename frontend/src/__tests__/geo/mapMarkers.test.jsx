@@ -32,6 +32,13 @@ jest.mock("../../features/geo/MarkerClusterLayer", () => {
   };
 });
 
+// Mock HeatLayer so real Leaflet plugin is not evaluated in Jest
+jest.mock("../../features/geo/HeatLayer", () => {
+  return function MockHeatLayer() {
+    return <div data-testid="heat-layer" />;
+  };
+});
+
 // Sample mock complaints for testing
 const mockApiComplaints = [
   {

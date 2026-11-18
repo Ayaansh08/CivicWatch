@@ -132,3 +132,31 @@ def plain_client():
     """Return an unauthenticated TestClient."""
     # No authentication override
     return TestClient(app)
+
+
+@pytest.fixture
+def officer_user():
+    """Create and return an authority officer user for tests."""
+    # Open db session
+    db = TestingSessionLocal()
+    user = User(
+        name="Test Officer",
+        email="officer@example.com",
+        password_hash="hashed-pw",
+        role="officer",
+    )
+    # Save officer to test db
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    db.expunge(user)
+    db.close()
+    return user
+
+
+@pytest.fixture
+def officer_client(officer_user):
+    """Return a TestClient authenticated as the test officer."""
+    # Override get_current_user to return test officer
+    app.dependency_overrides[get_current_user] = lambda: officer_user
+    return TestClient(app)
