@@ -1,11 +1,9 @@
 /** Authority Dashboard — lists complaints and lets officers manage them. */
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { TOKEN_KEY } from "../../config";
-import {
-  fetchComplaints,
-  escalateOverdue,
-  ALLOWED_NEXT,
-} from "./authorityApi";
+import { escalateOverdue, ALLOWED_NEXT } from "./authorityApi";
+import { useComplaints } from "./useComplaints";
+import ComplaintsTable from "./ComplaintsTable";
 import AssignForm from "./AssignForm";
 import StatusUpdateForm from "./StatusUpdateForm";
 import "./authority.css";
@@ -32,38 +30,22 @@ function AuthorityDashboard() {
   // Check if user is logged in
   const token = localStorage.getItem(TOKEN_KEY);
 
-  // List of complaints returned from the API
-  const [complaints, setComplaints] = useState([]);
-  // Loading and error state
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  // Active filter values
-  const [statusFilter, setStatusFilter] = useState("");
-  const [sortOrder, setSortOrder] = useState("newest");
+  // Complaints state managed by custom hook
+  const {
+    complaints,
+    loading,
+    error,
+    statusFilter,
+    setStatusFilter,
+    sortOrder,
+    setSortOrder,
+    loadComplaints,
+  } = useComplaints(token);
+
   // The complaint currently shown in the detail panel
   const [selected, setSelected] = useState(null);
   // Escalation result message
   const [escalateMsg, setEscalateMsg] = useState("");
-
-  // Load complaints whenever filters change
-  useEffect(() => {
-    if (!token) return;
-    loadComplaints();
-  }, [statusFilter, sortOrder]);
-
-  /** Fetch complaints from the API and update state. */
-  async function loadComplaints() {
-    setLoading(true);
-    setError("");
-    try {
-      const data = await fetchComplaints(statusFilter, "", sortOrder);
-      setComplaints(data);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }
 
   /** Trigger the escalate endpoint and show the result. */
   async function handleEscalate() {
@@ -127,49 +109,11 @@ function AuthorityDashboard() {
 
       {/* Complaints table */}
       {complaints.length > 0 && (
-        <table className="complaints-table">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Title</th>
-              <th>Category</th>
-              <th>Status</th>
-              <th>Priority</th>
-              <th>Department</th>
-              <th>Age (days)</th>
-            </tr>
-          </thead>
-          <tbody>
-            {complaints.map((c) => {
-              // Calculate age in days from created_at
-              const age = c.created_at
-                ? Math.floor(
-                    (Date.now() - new Date(c.created_at).getTime()) /
-                      86400000
-                  )
-                : "—";
-              return (
-                <tr
-                  key={c.id}
-                  onClick={() => setSelected(c)}
-                  className={selected?.id === c.id ? "selected" : ""}
-                >
-                  <td>{c.id}</td>
-                  <td>{c.title}</td>
-                  <td>{c.category_name}</td>
-                  <td>
-                    <span className={`badge badge-${c.status.replace(" ", "-")}`}>
-                      {c.status}
-                    </span>
-                  </td>
-                  <td>{c.priority}</td>
-                  <td>{c.department_name || "—"}</td>
-                  <td>{age}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+        <ComplaintsTable
+          complaints={complaints}
+          selected={selected}
+          onSelect={(c) => setSelected(c)}
+        />
       )}
 
       {/* Detail panel for selected complaint */}
