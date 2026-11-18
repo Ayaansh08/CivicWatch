@@ -7,7 +7,7 @@ Provides two implementations:
 (b) PostGIS version for PostgreSQL in production, utilizing native spatial functions
     (ST_DWithin, ST_Distance, and the && envelope operator) backed by GiST indexes.
 """
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 
@@ -63,13 +63,15 @@ def get_bbox_complaints_fallback(
     min_lon: float,
     max_lat: float,
     max_lon: float,
+    category_id: Optional[int] = None,
+    status: Optional[str] = None,
     limit: int = 500,
 ) -> List[Dict[str, Any]]:
     """
     Find complaints inside a bounding box using standard SQL comparisons.
-    Used for non-PostgreSQL databases like SQLite in tests.
+    Supports optional filtering by category_id and status.
     """
-    # 1. Query complaints whose coordinates fall within the min/max latitude and longitude
+    # 1. Query complaints within the min/max latitude and longitude range
     query = (
         db.query(Complaint, Category.name.label("category_name"))
         .join(Category, Complaint.category_id == Category.id)
@@ -79,10 +81,20 @@ def get_bbox_complaints_fallback(
             Complaint.longitude >= min_lon,
             Complaint.longitude <= max_lon,
         )
-        .limit(limit)
     )
 
-    # 2. Build the result dictionaries matching the expected response schema
+    # 2. Apply optional category filter if provided
+    if category_id is not None:
+        query = query.filter(Complaint.category_id == category_id)
+
+    # 3. Apply optional status filter if provided
+    if status is not None:
+        query = query.filter(Complaint.status == status)
+
+    # 4. Limit the query results
+    query = query.limit(limit)
+
+    # 5. Build the result dictionaries matching the expected response schema
     results = []
     for complaint, category_name in query.all():
         results.append({
@@ -149,15 +161,35 @@ def get_bbox_complaints_postgis(
     min_lon: float,
     max_lat: float,
     max_lon: float,
+    category_id: Optional[int] = None,
+    status: Optional[str] = None,
     limit: int = 500,
 ) -> List[Dict[str, Any]]:
     """
     Find complaints inside a bounding box using PostGIS spatial indexing.
-    Uses the && bounding box operator with ST_MakeEnvelope.
+    Supports optional filtering by category_id and status.
     """
-    # 1. Construct raw SQL using the && bounding-box operator and ST_MakeEnvelope
+    # 1. Build dynamic filter conditions for optional parameters
+    extra_filters = []
+    params = {
+        "min_lon": min_lon,
+        "min_lat": min_lat,
+        "max_lon": max_lon,
+        "max_lat": max_lat,
+        "limit": limit,
+    }
+    if category_id is not None:
+        extra_filters.append("AND c.category_id = :category_id")
+        params["category_id"] = category_id
+    if status is not None:
+        extra_filters.append("AND c.status = :status")
+        params["status"] = status
+
+    filter_clause = " ".join(extra_filters)
+
+    # 2. Construct raw SQL query with envelope operator and optional filters
     sql = text(
-        """
+        f"""
         SELECT
             c.id,
             c.title,
@@ -171,21 +203,13 @@ def get_bbox_complaints_postgis(
         JOIN categories cat ON c.category_id = cat.id
         WHERE c.location IS NOT NULL
           AND c.location && ST_MakeEnvelope(:min_lon, :min_lat, :max_lon, :max_lat, 4326)
+          {filter_clause}
         LIMIT :limit;
         """
     )
 
-    # 2. Execute query and map rows to dictionaries
-    result = db.execute(
-        sql,
-        {
-            "min_lon": min_lon,
-            "min_lat": min_lat,
-            "max_lon": max_lon,
-            "max_lat": max_lat,
-            "limit": limit,
-        },
-    )
+    # 3. Execute query and map rows to dictionaries
+    result = db.execute(sql, params)
     return [dict(row) for row in result.mappings().all()]
 
 
@@ -207,6 +231,8 @@ def query_bbox_complaints(
     min_lon: float,
     max_lat: float,
     max_lon: float,
+    category_id: Optional[int] = None,
+    status: Optional[str] = None,
     limit: int = 500,
 ) -> List[Dict[str, Any]]:
     """
@@ -214,5 +240,23 @@ def query_bbox_complaints(
     """
     # Detect dialect name to choose between PostGIS and Python fallback
     if db.bind is not None and db.bind.dialect.name == "postgresql":
-        return get_bbox_complaints_postgis(db, min_lat, min_lon, max_lat, max_lon, limit)
-    return get_bbox_complaints_fallback(db, min_lat, min_lon, max_lat, max_lon, limit)
+        return get_bbox_complaints_postgis(
+            db,
+            min_lat,
+            min_lon,
+            max_lat,
+            max_lon,
+            category_id=category_id,
+            status=status,
+            limit=limit,
+        )
+    return get_bbox_complaints_fallback(
+        db,
+        min_lat,
+        min_lon,
+        max_lat,
+        max_lon,
+        category_id=category_id,
+        status=status,
+        limit=limit,
+    )

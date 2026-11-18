@@ -1,24 +1,43 @@
 /**
- * Tests for the MapView component real marker loading.
- * Verifies API requests with auth token, marker rendering, popup details,
- * loading indicator, empty list message, error handling, and complaint count.
+ * Tests for map marker clustering, helper functions, and MapView state rendering.
  */
 import React from "react";
 import { render, screen, waitFor } from "@testing-library/react";
 import MapView from "../../features/geo/MapView";
+import { escapeHtml, buildPopupHtml, toHeatPoints } from "../../features/geo/mapHelpers";
 import { API_URL, TOKEN_KEY } from "../../config";
 
-// Mock react-leaflet components with simple div containers and test IDs
+// Mock react-leaflet components with simple div containers
 jest.mock("react-leaflet", () => ({
   MapContainer: ({ children }) => <div data-testid="map-container">{children}</div>,
   TileLayer: () => <div data-testid="tile-layer" />,
-  Marker: ({ children, position }) => (
-    <div data-testid="marker" data-lat={position?.[0]} data-lon={position?.[1]}>
-      {children}
-    </div>
-  ),
-  Popup: ({ children }) => <div data-testid="popup">{children}</div>,
+  useMap: () => ({
+    addLayer: jest.fn(),
+    removeLayer: jest.fn(),
+  }),
 }));
+
+// Mock MarkerClusterLayer with a div showing complaint count
+jest.mock("../../features/geo/MarkerClusterLayer", () => {
+  return function MockMarkerClusterLayer({ complaints }) {
+    return (
+      <div data-testid="marker-cluster-layer" data-count={complaints ? complaints.length : 0}>
+        {(complaints || []).map((c) => (
+          <div key={c.id} data-testid="cluster-item">
+            {c.title}
+          </div>
+        ))}
+      </div>
+    );
+  };
+});
+
+// Mock HeatLayer so real Leaflet plugin is not evaluated in Jest
+jest.mock("../../features/geo/HeatLayer", () => {
+  return function MockHeatLayer() {
+    return <div data-testid="heat-layer" />;
+  };
+});
 
 // Sample mock complaints for testing
 const mockApiComplaints = [
@@ -55,115 +74,172 @@ beforeEach(() => {
   // Store a mock token in localStorage
   localStorage.setItem(TOKEN_KEY, "test-jwt-token");
 
-  // Default mock fetch implementation returning the 3 complaints
-  global.fetch = jest.fn(() =>
-    Promise.resolve({
+  // Default mock fetch implementation returning complaints and categories
+  global.fetch = jest.fn((url) => {
+    if (typeof url === "string" && url.includes("/complaints/categories")) {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve([]),
+      });
+    }
+    return Promise.resolve({
       ok: true,
       status: 200,
       json: () => Promise.resolve(mockApiComplaints),
-    })
-  );
+    });
+  });
 });
 
 afterEach(() => {
-  // Clear all mocks and localStorage after each test
+  // Clear mocks and localStorage
   jest.clearAllMocks();
   localStorage.clear();
+});
+
+test("escapeHtml escapes script tags and special characters", () => {
+  // Test malicious script tags
+  const raw = '<script>alert("xss")</script>&\'';
+  const escaped = escapeHtml(raw);
+
+  // Assert characters are replaced with safe entities
+  expect(escaped).toBe("&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;&amp;&#039;");
+});
+
+test("buildPopupHtml escapes a malicious title", () => {
+  // Complaint with script injection in title
+  const maliciousComplaint = {
+    title: "<img src=x onerror=alert(1)>",
+    category_name: "Pothole",
+    status: "Submitted",
+    priority: "High",
+  };
+  const html = buildPopupHtml(maliciousComplaint);
+
+  // Assert HTML does not contain unescaped tag
+  expect(html).not.toContain("<img src=x onerror=alert(1)>");
+  expect(html).toContain("&lt;img src=x onerror=alert(1)&gt;");
+  expect(html).toContain("Pothole");
+  expect(html).toContain("Submitted");
+});
+
+test("toHeatPoints formats points into lat lon intensity shape", () => {
+  // Input point list
+  const points = [
+    { lat: 28.62, lon: 77.36, count: 5 },
+    { latitude: 28.63, longitude: 77.37, intensity: 2 },
+  ];
+  const heatPoints = toHeatPoints(points);
+
+  // Assert output structure
+  expect(heatPoints).toEqual([
+    [28.62, 77.36, 5],
+    [28.63, 77.37, 2],
+  ]);
 });
 
 test("MapView calls GET /geo/complaints/bbox with a Bearer token from localStorage", async () => {
   // Render MapView
   render(<MapView />);
 
-  // Verify fetch was called with the correct URL and Authorization header
+  // Wait for bbox fetch call to complete
   await waitFor(() => {
-    expect(global.fetch).toHaveBeenCalled();
+    const bboxCall = global.fetch.mock.calls.find((call) =>
+      call[0].includes(`${API_URL}/geo/complaints/bbox`)
+    );
+    expect(bboxCall).toBeTruthy();
+    expect(bboxCall[1].headers.Authorization).toBe("Bearer test-jwt-token");
   });
-
-  const calledUrl = global.fetch.mock.calls[0][0];
-  const calledOptions = global.fetch.mock.calls[0][1];
-
-  expect(calledUrl).toContain(`${API_URL}/geo/complaints/bbox`);
-  expect(calledOptions.headers.Authorization).toBe("Bearer test-jwt-token");
 });
 
-test("it renders one marker per complaint from the mocked response", async () => {
+test("MapView passes all complaints to the cluster layer", async () => {
   // Render MapView
   render(<MapView />);
 
-  // Wait for markers to appear
+  // Wait for cluster layer to receive the items
   await waitFor(() => {
-    const markers = screen.getAllByTestId("marker");
-    expect(markers).toHaveLength(3);
+    const items = screen.getAllByTestId("cluster-item");
+    expect(items).toHaveLength(3);
   });
 });
 
-test("each popup shows title, category and status", async () => {
-  // Render MapView
-  render(<MapView />);
-
-  // Verify first complaint popup details are displayed
-  await waitFor(() => {
-    expect(screen.getByText("Large pothole on highway")).toBeInTheDocument();
-    expect(screen.getByText(/Pothole/)).toBeInTheDocument();
-    expect(screen.getByText(/Submitted/)).toBeInTheDocument();
+test("MapView shows Loading complaints message first", () => {
+  // Return pending promise for bbox
+  global.fetch = jest.fn((url) => {
+    if (typeof url === "string" && url.includes("/complaints/categories")) {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve([]),
+      });
+    }
+    return new Promise(() => {});
   });
-});
-
-test("it shows 'Loading complaints...' first", () => {
-  // Return an unresolved promise to check loading state
-  global.fetch = jest.fn(() => new Promise(() => {}));
 
   // Render MapView
   render(<MapView />);
 
-  // Loading indicator must be visible immediately
+  // Check loading text
   expect(screen.getByText("Loading complaints...")).toBeInTheDocument();
 });
 
-test("it shows 'No complaints found in this area' for an empty list", async () => {
-  // Return empty list of complaints
-  global.fetch = jest.fn(() =>
-    Promise.resolve({
+test("MapView shows empty message when no complaints exist", async () => {
+  // Return empty list
+  global.fetch = jest.fn((url) => {
+    if (typeof url === "string" && url.includes("/complaints/categories")) {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve([]),
+      });
+    }
+    return Promise.resolve({
       ok: true,
       status: 200,
       json: () => Promise.resolve([]),
-    })
-  );
+    });
+  });
 
   // Render MapView
   render(<MapView />);
 
-  // Empty state message should appear
+  // Check empty message
   await waitFor(() => {
     expect(screen.getByText("No complaints found in this area")).toBeInTheDocument();
   });
 });
 
-test("it shows 'Could not load complaints' when fetch fails or returns 401", async () => {
-  // Simulate 401 Unauthorized failure
-  global.fetch = jest.fn(() =>
-    Promise.resolve({
+test("MapView shows error message when fetch fails", async () => {
+  // Simulate 401 error
+  global.fetch = jest.fn((url) => {
+    if (typeof url === "string" && url.includes("/complaints/categories")) {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve([]),
+      });
+    }
+    return Promise.resolve({
       ok: false,
       status: 401,
       json: () => Promise.resolve({ detail: "Not authenticated" }),
-    })
-  );
+    });
+  });
 
   // Render MapView
   render(<MapView />);
 
-  // Error message should be displayed
+  // Check error message
   await waitFor(() => {
     expect(screen.getByText("Could not load complaints")).toBeInTheDocument();
   });
 });
 
-test("the total count text '3 complaints' appears for three items", async () => {
-  // Render MapView with 3 complaints
+test("MapView shows total complaints count message", async () => {
+  // Render MapView
   render(<MapView />);
 
-  // Total count indicator should appear
+  // Check count indicator
   await waitFor(() => {
     expect(screen.getByText("3 complaints")).toBeInTheDocument();
   });
