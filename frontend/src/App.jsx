@@ -2,8 +2,7 @@ import React, { lazy, Suspense } from "react";
 import { Routes, Route } from "react-router-dom";
 import ComplaintForm from "./features/citizen/ComplaintForm";
 import MyComplaints from "./features/citizen/MyComplaints";
-import LoginPage from "./features/auth/LoginPage";
-import RegisterPage from "./features/auth/RegisterPage";
+import AuthorityDashboard from "./features/authority/AuthorityDashboard";
 
 const MapView = lazy(() => import("./features/geo/MapView"));
 
@@ -25,6 +24,7 @@ function App() {
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/report" element={<ComplaintForm />} />
       <Route path="/my-complaints" element={<MyComplaints />} />
+      <Route path="/authority" element={<AuthorityDashboard />} />
       <Route
         path="/map"
         element={
