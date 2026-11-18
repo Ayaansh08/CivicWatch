@@ -20,6 +20,8 @@ function App() {
   return (
     <Routes>
       <Route path="/" element={<Home />} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
       <Route path="/report" element={<ComplaintForm />} />
       <Route path="/my-complaints" element={<MyComplaints />} />
       <Route path="/authority" element={<AuthorityDashboard />} />
