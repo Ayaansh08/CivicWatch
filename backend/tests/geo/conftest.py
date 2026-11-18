@@ -160,3 +160,18 @@ def officer_client(officer_user):
     # Override get_current_user to return test officer
     app.dependency_overrides[get_current_user] = lambda: officer_user
     return TestClient(app)
+
+
+@pytest.fixture
+def second_category():
+    """Create and return a second complaint category for tests."""
+    # Open db session
+    db = TestingSessionLocal()
+    category = Category(name="Garbage")
+    # Save category to test db
+    db.add(category)
+    db.commit()
+    db.refresh(category)
+    db.expunge(category)
+    db.close()
+    return category

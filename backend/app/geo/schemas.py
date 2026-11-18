@@ -1,7 +1,7 @@
 """
 Pydantic response schemas for geospatial endpoints.
 Defines output format for complaints retrieved through nearby and bounding-box queries,
-as well as density heatmap cells.
+density heatmap cells, and hotspot zones.
 """
 from typing import Optional
 from pydantic import BaseModel, ConfigDict
@@ -33,5 +33,18 @@ class DensityCellOut(BaseModel):
     lat: float
     lon: float
     count: int
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class HotspotOut(BaseModel):
+    """
+    Schema for a spatial density hotspot cluster.
+    Contains center coordinates, complaint count, and the most common category.
+    """
+    count: int
+    center_lat: float
+    center_lon: float
+    category: str
 
     model_config = ConfigDict(from_attributes=True)

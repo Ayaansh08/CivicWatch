@@ -1,6 +1,7 @@
 """
 FastAPI route handlers for geospatial queries on complaints.
-Provides /geo/complaints/nearby, /geo/complaints/bbox, and /geo/heatmap endpoints.
+Provides /geo/complaints/nearby, /geo/complaints/bbox, /geo/heatmap,
+and /geo/hotspots endpoints.
 """
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query, HTTPException, status
@@ -9,10 +10,11 @@ from sqlalchemy.orm import Session
 from backend.app.platform.database import get_db
 from backend.app.platform.deps import get_current_user
 from backend.app.platform.models import User, Complaint
-from backend.app.geo.schemas import GeoComplaintOut, DensityCellOut
+from backend.app.geo.schemas import GeoComplaintOut, DensityCellOut, HotspotOut
 from backend.app.geo.queries import query_nearby_complaints, query_bbox_complaints
 from backend.app.geo.permissions import require_officer
 from backend.app.geo.density import build_density
+from backend.app.geo.hotspot_api import get_hotspots_with_categories
 
 # Create APIRouter with /geo prefix and tag
 router = APIRouter(prefix="/geo", tags=["geo"])
@@ -164,3 +166,60 @@ def get_heatmap_endpoint(
 
     # Group points into density cells of 0.002 degrees
     return build_density(points, cell_size=0.002)
+
+
+@router.get(
+    "/hotspots",
+    response_model=List[HotspotOut],
+    summary="Get spatial complaint hotspots",
+)
+def get_hotspots_endpoint(
+    cell_size: float = Query(
+        0.01,
+        ge=0.001,
+        le=0.1,
+        description="Grid cell size in degrees (0.001 to 0.1)",
+    ),
+    min_count: int = Query(
+        3,
+        ge=2,
+        description="Minimum complaint count threshold (at least 2)",
+    ),
+    category_id: Optional[int] = Query(None, description="Filter by category ID"),
+    status_param: Optional[str] = Query(None, alias="status", description="Filter by status"),
+    db: Session = Depends(get_db),
+    # Restricted to officer and admin users
+    current_user: User = Depends(require_officer),
+):
+    """
+    Identify spatial complaint hotspots with dominant category tags.
+    Restricted to authority officers and system administrators.
+    """
+    # Explicit parameter boundary checks returning 422
+    if cell_size < 0.001 or cell_size > 0.1:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="cell_size must be between 0.001 and 0.1",
+        )
+    if min_count < 2:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="min_count must be at least 2",
+        )
+
+    # Validate status parameter
+    if status_param is not None and status_param not in VALID_STATUSES:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Invalid status: {status_param}",
+        )
+
+    # Calculate hotspots with most common category per cell
+    return get_hotspots_with_categories(
+        db,
+        cell_size=cell_size,
+        min_count=min_count,
+        category_id=category_id,
+        status=status_param,
+        limit=5000,
+    )

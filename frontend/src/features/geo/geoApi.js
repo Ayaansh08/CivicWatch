@@ -97,3 +97,49 @@ export async function fetchHeatmap(box, filters = {}) {
   // Parse and return JSON heatmap cells
   return await response.json();
 }
+
+/**
+ * Fetch repeat-issue spatial hotspots with optional filters.
+ *
+ * @param {number} [cellSize=0.01] Cell size in degrees.
+ * @param {number} [minCount=3] Minimum complaint threshold.
+ * @param {Object} [filters={}] Optional filters containing category_id and/or status.
+ * @returns {Promise<Array>} List of hotspot objects { count, center_lat, center_lon, category }.
+ * @throws {Error} If the HTTP response is not OK.
+ */
+export async function fetchHotspots(cellSize = 0.01, minCount = 3, filters = {}) {
+  // Retrieve token from local storage
+  const token = localStorage.getItem(TOKEN_KEY);
+
+  // Construct query parameters string
+  const params = new URLSearchParams({
+    cell_size: cellSize,
+    min_count: minCount,
+  });
+
+  // Append category filter if present
+  if (filters && filters.category_id) {
+    params.append("category_id", filters.category_id);
+  }
+
+  // Append status filter if present
+  if (filters && filters.status) {
+    params.append("status", filters.status);
+  }
+
+  // Call backend hotspots endpoint with authorization header
+  const response = await fetch(`${API_URL}/geo/hotspots?${params.toString()}`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token || ""}`,
+    },
+  });
+
+  // Throw descriptive error if request failed
+  if (!response.ok) {
+    throw new Error(`Failed to fetch hotspots: ${response.status}`);
+  }
+
+  // Parse and return JSON hotspot records
+  return await response.json();
+}
