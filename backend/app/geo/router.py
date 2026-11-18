@@ -2,7 +2,7 @@
 FastAPI route handlers for geospatial queries on complaints.
 Provides /geo/complaints/nearby and /geo/complaints/bbox endpoints.
 """
-from typing import List
+from typing import List, Optional
 from fastapi import APIRouter, Depends, Query, HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -14,6 +14,16 @@ from backend.app.geo.queries import query_nearby_complaints, query_bbox_complain
 
 # Create APIRouter with /geo prefix and tag
 router = APIRouter(prefix="/geo", tags=["geo"])
+
+# Valid complaint status values according to the system workflow
+VALID_STATUSES = {
+    "Submitted",
+    "Under Review",
+    "Assigned",
+    "In Progress",
+    "Resolved",
+    "Rejected",
+}
 
 
 @router.get(
@@ -29,7 +39,6 @@ def get_nearby_complaints_endpoint(
     ),
     db: Session = Depends(get_db),
     # Authentication required for all users
-    # NOTE: Role-based restrictions will come later from teammate Gaurav's RBAC
     current_user: User = Depends(get_current_user),
 ):
     """
@@ -49,13 +58,15 @@ def get_bbox_complaints_endpoint(
     min_lon: float = Query(..., ge=-180.0, le=180.0, description="Minimum longitude (-180 to 180)"),
     max_lat: float = Query(..., ge=-90.0, le=90.0, description="Maximum latitude (-90 to 90)"),
     max_lon: float = Query(..., ge=-180.0, le=180.0, description="Maximum longitude (-180 to 180)"),
+    category_id: Optional[int] = Query(None, description="Filter by category ID"),
+    status_param: Optional[str] = Query(None, alias="status", description="Filter by status"),
     db: Session = Depends(get_db),
     # Authentication required for all users
-    # NOTE: Role-based restrictions will come later from teammate Gaurav's RBAC
     current_user: User = Depends(get_current_user),
 ):
     """
     Retrieve complaints whose coordinates fall inside the specified geographic bounding box.
+    Supports optional category and status filtering.
     """
     # Validate that min values are strictly less than max values
     if min_lat >= max_lat:
@@ -69,7 +80,20 @@ def get_bbox_complaints_endpoint(
             detail="min_lon must be less than max_lon",
         )
 
+    # Validate status parameter against allowed complaint statuses
+    if status_param is not None and status_param not in VALID_STATUSES:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Invalid status: {status_param}",
+        )
+
     # Execute query using the dispatcher (PostGIS on Postgres, SQL bounds on SQLite)
     return query_bbox_complaints(
-        db, min_lat=min_lat, min_lon=min_lon, max_lat=max_lat, max_lon=max_lon
+        db,
+        min_lat=min_lat,
+        min_lon=min_lon,
+        max_lat=max_lat,
+        max_lon=max_lon,
+        category_id=category_id,
+        status=status_param,
     )

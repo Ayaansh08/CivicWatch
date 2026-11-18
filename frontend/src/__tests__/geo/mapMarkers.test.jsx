@@ -67,14 +67,21 @@ beforeEach(() => {
   // Store a mock token in localStorage
   localStorage.setItem(TOKEN_KEY, "test-jwt-token");
 
-  // Default mock fetch implementation returning 3 complaints
-  global.fetch = jest.fn(() =>
-    Promise.resolve({
+  // Default mock fetch implementation returning complaints and categories
+  global.fetch = jest.fn((url) => {
+    if (typeof url === "string" && url.includes("/complaints/categories")) {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve([]),
+      });
+    }
+    return Promise.resolve({
       ok: true,
       status: 200,
       json: () => Promise.resolve(mockApiComplaints),
-    })
-  );
+    });
+  });
 });
 
 afterEach(() => {
@@ -128,16 +135,14 @@ test("MapView calls GET /geo/complaints/bbox with a Bearer token from localStora
   // Render MapView
   render(<MapView />);
 
-  // Verify fetch was called with the correct URL and Authorization header
+  // Wait for bbox fetch call to complete
   await waitFor(() => {
-    expect(global.fetch).toHaveBeenCalled();
+    const bboxCall = global.fetch.mock.calls.find((call) =>
+      call[0].includes(`${API_URL}/geo/complaints/bbox`)
+    );
+    expect(bboxCall).toBeTruthy();
+    expect(bboxCall[1].headers.Authorization).toBe("Bearer test-jwt-token");
   });
-
-  const calledUrl = global.fetch.mock.calls[0][0];
-  const calledOptions = global.fetch.mock.calls[0][1];
-
-  expect(calledUrl).toContain(`${API_URL}/geo/complaints/bbox`);
-  expect(calledOptions.headers.Authorization).toBe("Bearer test-jwt-token");
 });
 
 test("MapView passes all complaints to the cluster layer", async () => {
@@ -152,8 +157,17 @@ test("MapView passes all complaints to the cluster layer", async () => {
 });
 
 test("MapView shows Loading complaints message first", () => {
-  // Return pending promise
-  global.fetch = jest.fn(() => new Promise(() => {}));
+  // Return pending promise for bbox
+  global.fetch = jest.fn((url) => {
+    if (typeof url === "string" && url.includes("/complaints/categories")) {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve([]),
+      });
+    }
+    return new Promise(() => {});
+  });
 
   // Render MapView
   render(<MapView />);
@@ -164,13 +178,20 @@ test("MapView shows Loading complaints message first", () => {
 
 test("MapView shows empty message when no complaints exist", async () => {
   // Return empty list
-  global.fetch = jest.fn(() =>
-    Promise.resolve({
+  global.fetch = jest.fn((url) => {
+    if (typeof url === "string" && url.includes("/complaints/categories")) {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve([]),
+      });
+    }
+    return Promise.resolve({
       ok: true,
       status: 200,
       json: () => Promise.resolve([]),
-    })
-  );
+    });
+  });
 
   // Render MapView
   render(<MapView />);
@@ -183,13 +204,20 @@ test("MapView shows empty message when no complaints exist", async () => {
 
 test("MapView shows error message when fetch fails", async () => {
   // Simulate 401 error
-  global.fetch = jest.fn(() =>
-    Promise.resolve({
+  global.fetch = jest.fn((url) => {
+    if (typeof url === "string" && url.includes("/complaints/categories")) {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve([]),
+      });
+    }
+    return Promise.resolve({
       ok: false,
       status: 401,
       json: () => Promise.resolve({ detail: "Not authenticated" }),
-    })
-  );
+    });
+  });
 
   // Render MapView
   render(<MapView />);

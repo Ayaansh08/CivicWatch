@@ -235,3 +235,110 @@ def test_bbox_endpoint_without_token_returns_401(plain_client):
 
     # Unauthenticated request returns 401
     assert response.status_code == 401
+
+
+def test_bbox_filter_by_category_returns_only_matching_category(
+    authenticated_client, insert_complaint, test_category
+):
+    """Bounding box query with category_id returns only complaints with that category."""
+    # Insert two complaints: one with test_category, one with another category
+    insert_complaint(28.62, 77.36, title="Pothole Issue", category_id=test_category.id)
+    insert_complaint(28.62, 77.36, title="Other Issue", category_id=999)
+
+    # Query with category_id filter
+    url = (
+        f"/geo/complaints/bbox?min_lat=28.60&min_lon=77.34&max_lat=28.64&max_lon=77.38"
+        f"&category_id={test_category.id}"
+    )
+    response = authenticated_client.get(url)
+
+    # Only matching category should be returned
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 1
+    assert data[0]["title"] == "Pothole Issue"
+
+
+def test_bbox_filter_by_status_returns_only_matching_status(
+    authenticated_client, insert_complaint
+):
+    """Bounding box query with status returns only complaints with that status."""
+    # Insert one Submitted and one Resolved complaint
+    insert_complaint(28.62, 77.36, title="Submitted Issue", status="Submitted")
+    insert_complaint(28.62, 77.36, title="Resolved Issue", status="Resolved")
+
+    # Query with status=Resolved
+    url = (
+        "/geo/complaints/bbox?min_lat=28.60&min_lon=77.34&max_lat=28.64&max_lon=77.38"
+        "&status=Resolved"
+    )
+    response = authenticated_client.get(url)
+
+    # Only Resolved complaint should be returned
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 1
+    assert data[0]["title"] == "Resolved Issue"
+
+
+def test_bbox_filter_by_both_category_and_status(
+    authenticated_client, insert_complaint, test_category
+):
+    """Bounding box query with both category and status filters simultaneously."""
+    # Insert matching and non-matching complaints
+    insert_complaint(
+        28.62, 77.36, title="Match", category_id=test_category.id, status="In Progress"
+    )
+    insert_complaint(
+        28.62, 77.36, title="Wrong Category", category_id=999, status="In Progress"
+    )
+    insert_complaint(
+        28.62, 77.36, title="Wrong Status", category_id=test_category.id, status="Resolved"
+    )
+
+    # Query with both category_id and status filters
+    url = (
+        f"/geo/complaints/bbox?min_lat=28.60&min_lon=77.34&max_lat=28.64&max_lon=77.38"
+        f"&category_id={test_category.id}&status=In Progress"
+    )
+    response = authenticated_client.get(url)
+
+    # Only the exact match is returned
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 1
+    assert data[0]["title"] == "Match"
+
+
+def test_bbox_with_invalid_status_returns_422(authenticated_client):
+    """Bounding box query with invalid status value must return 422."""
+    # Query with bogus status
+    url = (
+        "/geo/complaints/bbox?min_lat=28.60&min_lon=77.34&max_lat=28.64&max_lon=77.38"
+        "&status=BogusStatus"
+    )
+    response = authenticated_client.get(url)
+
+    # Should fail validation with 422
+    assert response.status_code == 422
+
+
+def test_bbox_filters_with_no_matches_returns_empty_list(
+    authenticated_client, insert_complaint, test_category
+):
+    """Bounding box query where no complaints match the filters returns empty list."""
+    # Insert a complaint
+    insert_complaint(
+        28.62, 77.36, title="Pothole Issue", category_id=test_category.id, status="Submitted"
+    )
+
+    # Query with non-matching status
+    url = (
+        f"/geo/complaints/bbox?min_lat=28.60&min_lon=77.34&max_lat=28.64&max_lon=77.38"
+        f"&category_id={test_category.id}&status=Rejected"
+    )
+    response = authenticated_client.get(url)
+
+    # Returns empty array
+    assert response.status_code == 200
+    assert response.json() == []
