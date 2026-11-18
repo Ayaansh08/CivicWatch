@@ -1,31 +1,16 @@
 /**
  * MapView component: renders an interactive Leaflet map with real complaints
- * fetched from the backend API.
+ * fetched from the backend API, clustered using MarkerClusterLayer.
  */
 import React, { useState, useEffect } from "react";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import { MapContainer, TileLayer } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
-import L from "leaflet";
-
-// Marker asset imports for Vite compatibility
-import iconUrl from "leaflet/dist/images/marker-icon.png";
-import iconRetinaUrl from "leaflet/dist/images/marker-icon-2x.png";
-import shadowUrl from "leaflet/dist/images/marker-shadow.png";
 
 // Geo API helper to fetch complaints by bounding box
 import { fetchComplaintsInBox } from "./geoApi";
+import MarkerClusterLayer from "./MarkerClusterLayer";
 
-// NOTE: mockComplaints.js is kept in this folder only for offline demos and development stubs.
-
-// Fix default marker icon resolution in Vite asset bundling
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconUrl,
-  iconRetinaUrl,
-  shadowUrl,
-});
-
-// Fixed starting bounding box covering the Delhi NCR region (Sprint 3 filters will dynamically adjust this)
+// Fixed starting bounding box covering the Delhi NCR region
 const DELHI_NCR_BBOX = {
   min_lat: 28.2,
   min_lon: 76.8,
@@ -99,27 +84,8 @@ function MapView() {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
-        {/* Render a marker and popup for each complaint */}
-        {complaints.map((complaint) => (
-          <Marker
-            key={complaint.id}
-            position={[complaint.latitude, complaint.longitude]}
-          >
-            <Popup>
-              <div>
-                <h4 style={{ margin: "0 0 6px 0", fontSize: "14px" }}>
-                  {complaint.title}
-                </h4>
-                <p style={{ margin: "2px 0", fontSize: "12px" }}>
-                  <strong>Category:</strong> {complaint.category_name}
-                </p>
-                <p style={{ margin: "2px 0", fontSize: "12px" }}>
-                  <strong>Status:</strong> {complaint.status}
-                </p>
-              </div>
-            </Popup>
-          </Marker>
-        ))}
+        {/* Render clustered complaint markers */}
+        <MarkerClusterLayer complaints={complaints} />
       </MapContainer>
     </div>
   );
