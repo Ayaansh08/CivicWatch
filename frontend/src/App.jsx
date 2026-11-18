@@ -8,6 +8,7 @@ import ProtectedRoute from "./features/auth/ProtectedRoute";
 import AuthorityDashboard from "./features/authority/AuthorityDashboard";
 
 const MapView = lazy(() => import("./features/geo/MapView"));
+const ReportsPage = lazy(() => import("./features/geo/ReportsPage"));
 
 /** Displays the CivicWatch home page. */
 function Home() {
@@ -51,6 +52,16 @@ function App() {
           <ProtectedRoute allowedRoles={["officer", "admin"]}>
             <Suspense fallback={<div>Loading map...</div>}>
               <MapView />
+            </Suspense>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/reports"
+        element={
+          <ProtectedRoute allowedRoles={["officer", "admin"]}>
+            <Suspense fallback={<div>Loading reports...</div>}>
+              <ReportsPage />
             </Suspense>
           </ProtectedRoute>
         }

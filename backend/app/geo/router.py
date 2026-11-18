@@ -1,6 +1,7 @@
 """
 FastAPI route handlers for geospatial queries on complaints.
-Provides /geo/complaints/nearby, /geo/complaints/bbox, and /geo/heatmap endpoints.
+Provides /geo/complaints/nearby, /geo/complaints/bbox, /geo/heatmap,
+/geo/hotspots, and /geo/reports/summary endpoints.
 """
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query, HTTPException, status
@@ -8,11 +9,19 @@ from sqlalchemy.orm import Session
 
 from backend.app.platform.database import get_db
 from backend.app.platform.deps import get_current_user
-from backend.app.platform.models import User, Complaint
-from backend.app.geo.schemas import GeoComplaintOut, DensityCellOut
+from backend.app.platform.models import User, Complaint, Category
+from backend.app.geo.schemas import (
+    GeoComplaintOut,
+    DensityCellOut,
+    HotspotOut,
+    ReportsSummaryOut,
+)
 from backend.app.geo.queries import query_nearby_complaints, query_bbox_complaints
 from backend.app.geo.permissions import require_officer
 from backend.app.geo.density import build_density
+from backend.app.geo.hotspot_api import get_hotspots_with_categories
+from backend.app.geo.reports import build_summary_report
+from backend.app.geo.constants import MAX_RESULTS, HEATMAP_CELL_SIZE
 
 # Create APIRouter with /geo prefix and tag
 router = APIRouter(prefix="/geo", tags=["geo"])
@@ -157,10 +166,113 @@ def get_heatmap_endpoint(
         query = query.filter(Complaint.status == status_param)
 
     # Execute query with safety limit
-    rows = query.limit(5000).all()
+    rows = query.limit(MAX_RESULTS).all()
 
     # Format points list for density function
     points = [{"lat": r[0], "lon": r[1]} for r in rows]
 
-    # Group points into density cells of 0.002 degrees
-    return build_density(points, cell_size=0.002)
+    # Group points into density cells using the configured heatmap cell size
+    return build_density(points, cell_size=HEATMAP_CELL_SIZE)
+
+
+@router.get(
+    "/hotspots",
+    response_model=List[HotspotOut],
+    summary="Get spatial complaint hotspots",
+)
+def get_hotspots_endpoint(
+    cell_size: float = Query(
+        0.01,
+        ge=0.001,
+        le=0.1,
+        description="Grid cell size in degrees (0.001 to 0.1)",
+    ),
+    min_count: int = Query(
+        3,
+        ge=2,
+        description="Minimum complaint count threshold (at least 2)",
+    ),
+    category_id: Optional[int] = Query(None, description="Filter by category ID"),
+    status_param: Optional[str] = Query(None, alias="status", description="Filter by status"),
+    db: Session = Depends(get_db),
+    # Restricted to officer and admin users
+    current_user: User = Depends(require_officer),
+):
+    """
+    Identify spatial complaint hotspots with dominant category tags.
+    Restricted to authority officers and system administrators.
+    """
+    # Explicit parameter boundary checks returning 422
+    if cell_size < 0.001 or cell_size > 0.1:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="cell_size must be between 0.001 and 0.1",
+        )
+    if min_count < 2:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="min_count must be at least 2",
+        )
+
+    # Validate status parameter
+    if status_param is not None and status_param not in VALID_STATUSES:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Invalid status: {status_param}",
+        )
+
+    # Calculate hotspots with most common category per cell
+    return get_hotspots_with_categories(
+        db,
+        cell_size=cell_size,
+        min_count=min_count,
+        category_id=category_id,
+        status=status_param,
+        limit=MAX_RESULTS,
+    )
+
+
+@router.get(
+    "/reports/summary",
+    response_model=ReportsSummaryOut,
+    summary="Get overall analytics and geospatial summary",
+)
+def get_reports_summary_endpoint(
+    db: Session = Depends(get_db),
+    # Restricted to officer and admin users
+    current_user: User = Depends(require_officer),
+):
+    """
+    Generate analytics summary containing status breakdown, category distribution,
+    top geographic areas, and average resolution time.
+    """
+    # Fetch complaints with category names and timestamps
+    rows = (
+        db.query(
+            Complaint.status,
+            Complaint.latitude,
+            Complaint.longitude,
+            Complaint.created_at,
+            Complaint.updated_at,
+            Category.name.label("category_name"),
+        )
+        .outerjoin(Category, Complaint.category_id == Category.id)
+        .limit(MAX_RESULTS)
+        .all()
+    )
+
+    # Format rows into plain dictionaries for pure calculation functions
+    complaints = [
+        {
+            "status": r.status,
+            "latitude": r.latitude,
+            "longitude": r.longitude,
+            "created_at": r.created_at,
+            "updated_at": r.updated_at,
+            "category": r.category_name or "General",
+        }
+        for r in rows
+    ]
+
+    # Calculate summary using pure reporting module
+    return build_summary_report(complaints)

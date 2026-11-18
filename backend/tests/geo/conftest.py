@@ -86,52 +86,18 @@ def test_category():
 
 
 @pytest.fixture
-def insert_complaint(test_user, test_category):
-    """Helper function to insert a complaint at given latitude and longitude."""
-    def _create(
-        lat,
-        lon,
-        title="Test Complaint",
-        category_id=None,
-        status="Submitted",
-        priority="Medium",
-    ):
-        # Open db session to create complaint
-        db = TestingSessionLocal()
-        complaint = Complaint(
-            title=title,
-            description="Test Description",
-            category_id=category_id or test_category.id,
-            status=status,
-            priority=priority,
-            latitude=lat,
-            longitude=lon,
-            user_id=test_user.id,
-        )
-        # Commit to test database
-        db.add(complaint)
-        db.commit()
-        db.refresh(complaint)
-        db.expunge(complaint)
-        db.close()
-        return complaint
-
-    return _create
-
-
-@pytest.fixture
-def authenticated_client(test_user):
-    """Return a TestClient authenticated as the test user."""
-    # Override get_current_user to return test citizen
-    app.dependency_overrides[get_current_user] = lambda: test_user
-    return TestClient(app)
-
-
-@pytest.fixture
-def plain_client():
-    """Return an unauthenticated TestClient."""
-    # No authentication override
-    return TestClient(app)
+def second_category():
+    """Create and return a second complaint category for tests."""
+    # Open db session
+    db = TestingSessionLocal()
+    category = Category(name="Garbage")
+    # Save category to test db
+    db.add(category)
+    db.commit()
+    db.refresh(category)
+    db.expunge(category)
+    db.close()
+    return category
 
 
 @pytest.fixture
@@ -155,8 +121,63 @@ def officer_user():
 
 
 @pytest.fixture
+def insert_complaint(test_user, test_category):
+    """Helper function to insert a complaint at given latitude and longitude."""
+    def _create(
+        lat,
+        lon,
+        title="Test Complaint",
+        category_id=None,
+        status="Submitted",
+        priority="Medium",
+        created_at=None,
+        updated_at=None,
+    ):
+        # Open db session to create complaint
+        db = TestingSessionLocal()
+        complaint = Complaint(
+            title=title,
+            description="Test Description",
+            category_id=category_id or test_category.id,
+            status=status,
+            priority=priority,
+            latitude=lat,
+            longitude=lon,
+            user_id=test_user.id,
+        )
+        if created_at is not None:
+            complaint.created_at = created_at
+        if updated_at is not None:
+            complaint.updated_at = updated_at
+        # Commit to test database
+        db.add(complaint)
+        db.commit()
+        db.refresh(complaint)
+        db.expunge(complaint)
+        db.close()
+        return complaint
+
+    return _create
+
+
+@pytest.fixture
+def authenticated_client(test_user):
+    """Return a TestClient authenticated as the test user."""
+    # Override get_current_user to return test citizen
+    app.dependency_overrides[get_current_user] = lambda: test_user
+    return TestClient(app)
+
+
+@pytest.fixture
 def officer_client(officer_user):
     """Return a TestClient authenticated as the test officer."""
     # Override get_current_user to return test officer
     app.dependency_overrides[get_current_user] = lambda: officer_user
+    return TestClient(app)
+
+
+@pytest.fixture
+def plain_client():
+    """Return an unauthenticated TestClient."""
+    # No authentication override
     return TestClient(app)

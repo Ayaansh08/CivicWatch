@@ -1,7 +1,8 @@
 /**
  * MapView component: renders an interactive Leaflet map with real complaints
- * fetched from the backend API, clustered using MarkerClusterLayer, with filters
- * and a toggle between Markers and Heatmap views.
+ * fetched from the backend API, clustered using MarkerClusterLayer, with filters,
+ * a toggle between Markers and Heatmap views, optional Hotspots layer overlay,
+ * and navigation links to Reports.
  */
 import React, { useState, useEffect } from "react";
 import { MapContainer, TileLayer } from "react-leaflet";
@@ -9,9 +10,10 @@ import "leaflet/dist/leaflet.css";
 import "./geo.css";
 
 // Geo API helpers
-import { fetchComplaintsInBox, fetchHeatmap } from "./geoApi";
+import { fetchComplaintsInBox, fetchHeatmap, fetchHotspots } from "./geoApi";
 import MarkerClusterLayer from "./MarkerClusterLayer";
 import HeatLayer from "./HeatLayer";
+import HotspotLayer from "./HotspotLayer";
 import MapFilters from "./MapFilters";
 
 // Fixed starting bounding box covering the Delhi NCR region
@@ -23,12 +25,14 @@ const DELHI_NCR_BBOX = {
 };
 
 /**
- * Interactive map component displaying complaint locations and details.
+ * Interactive map component displaying complaint locations, clusters, heatmaps, and hotspots.
  */
 function MapView() {
-  // Component state for complaints, heatmap density cells, loading, errors, filters, and view mode
+  // Component state for complaints, heatmap cells, hotspots, loading, errors, filters, and layer toggles
   const [complaints, setComplaints] = useState([]);
   const [heatmapPoints, setHeatmapPoints] = useState([]);
+  const [hotspots, setHotspots] = useState([]);
+  const [showHotspots, setShowHotspots] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filters, setFilters] = useState({ category_id: "", status: "" });
@@ -84,27 +88,80 @@ function MapView() {
     };
   }, [filters, viewMode]);
 
+  // Fetch hotspots when hotspots overlay is enabled or filters change
+  useEffect(() => {
+    let isMounted = true;
+
+    if (!showHotspots) {
+      return;
+    }
+
+    async function loadHotspots() {
+      try {
+        const data = await fetchHotspots(0.01, 3, filters);
+        if (isMounted) {
+          setHotspots(data);
+        }
+      } catch {
+        // Keep previous hotspots on failure without breaking primary map
+      }
+    }
+
+    loadHotspots();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [showHotspots, filters]);
+
   return (
     <div className="map-view-container">
-      {/* Top toolbar with filters and view toggle */}
+      {/* Top toolbar with filters, view toggle, hotspots checkbox, and reports link */}
       <div className="map-toolbar">
         <MapFilters filters={filters} onFilterChange={setFilters} />
 
-        <div className="map-view-toggle">
-          <button
-            type="button"
-            className={viewMode === "markers" ? "active" : ""}
-            onClick={() => setViewMode("markers")}
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+          {/* Link to Reports Page */}
+          <a
+            href="/reports"
+            style={{
+              fontSize: "14px",
+              color: "#0070f3",
+              textDecoration: "none",
+              fontWeight: "bold",
+            }}
           >
-            Markers
-          </button>
-          <button
-            type="button"
-            className={viewMode === "heatmap" ? "active" : ""}
-            onClick={() => setViewMode("heatmap")}
-          >
-            Heatmap
-          </button>
+            Reports & Charts &rarr;
+          </a>
+
+          {/* Hotspots layer toggle checkbox */}
+          <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", fontSize: "14px" }}>
+            <input
+              type="checkbox"
+              aria-label="Hotspots"
+              checked={showHotspots}
+              onChange={(e) => setShowHotspots(e.target.checked)}
+            />
+            Hotspots
+          </label>
+
+          {/* Markers / Heatmap mode switcher */}
+          <div className="map-view-toggle">
+            <button
+              type="button"
+              className={viewMode === "markers" ? "active" : ""}
+              onClick={() => setViewMode("markers")}
+            >
+              Markers
+            </button>
+            <button
+              type="button"
+              className={viewMode === "heatmap" ? "active" : ""}
+              onClick={() => setViewMode("heatmap")}
+            >
+              Heatmap
+            </button>
+          </div>
         </div>
       </div>
 
@@ -132,12 +189,15 @@ function MapView() {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
-        {/* Render either clustered markers or heatmap layer */}
+        {/* Primary map layer: either clustered markers or heatmap */}
         {viewMode === "markers" ? (
           <MarkerClusterLayer complaints={complaints} />
         ) : (
           <HeatLayer points={heatmapPoints} />
         )}
+
+        {/* Optional hotspot circles overlay */}
+        {showHotspots && <HotspotLayer hotspots={hotspots} cell_size={0.01} />}
       </MapContainer>
     </div>
   );

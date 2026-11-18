@@ -5,8 +5,13 @@ Groups geographic coordinate points into equal-size grid cells.
 import math
 from typing import List, Dict, Any
 
+# Import the standard heatmap cell size constant
+from backend.app.geo.constants import HEATMAP_CELL_SIZE
 
-def build_density(points: List[Dict[str, Any]], cell_size: float = 0.002) -> List[Dict[str, Any]]:
+
+def build_density(
+    points: List[Dict[str, Any]], cell_size: float = HEATMAP_CELL_SIZE
+) -> List[Dict[str, Any]]:
     """
     Group points into grid cells of size cell_size degrees and calculate cell counts.
     Returns cells sorted by count in descending order.
