@@ -21,7 +21,7 @@ from backend.app.geo.permissions import require_officer
 from backend.app.geo.density import build_density
 from backend.app.geo.hotspot_api import get_hotspots_with_categories
 from backend.app.geo.reports import build_summary_report
-from backend.app.geo.constants import MAX_RESULTS, HEATMAP_CELL_SIZE, DEFAULT_CELL_SIZE
+from backend.app.geo.constants import MAX_RESULTS, HEATMAP_CELL_SIZE
 
 # Create APIRouter with /geo prefix and tag
 router = APIRouter(prefix="/geo", tags=["geo"])

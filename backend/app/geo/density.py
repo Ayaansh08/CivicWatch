@@ -9,7 +9,9 @@ from typing import List, Dict, Any
 from backend.app.geo.constants import HEATMAP_CELL_SIZE
 
 
-def build_density(points: List[Dict[str, Any]], cell_size: float = HEATMAP_CELL_SIZE) -> List[Dict[str, Any]]:
+def build_density(
+    points: List[Dict[str, Any]], cell_size: float = HEATMAP_CELL_SIZE
+) -> List[Dict[str, Any]]:
     """
     Group points into grid cells of size cell_size degrees and calculate cell counts.
     Returns cells sorted by count in descending order.
