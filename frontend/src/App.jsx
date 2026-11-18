@@ -2,6 +2,9 @@ import React, { lazy, Suspense } from "react";
 import { Routes, Route } from "react-router-dom";
 import ComplaintForm from "./features/citizen/ComplaintForm";
 import MyComplaints from "./features/citizen/MyComplaints";
+import LoginPage from "./features/auth/LoginPage";
+import RegisterPage from "./features/auth/RegisterPage";
+import ProtectedRoute from "./features/auth/ProtectedRoute";
 import AuthorityDashboard from "./features/authority/AuthorityDashboard";
 
 const MapView = lazy(() => import("./features/geo/MapView"));
@@ -22,15 +25,34 @@ function App() {
       <Route path="/" element={<Home />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
+      <Route
+        path="/report"
+        element={
+          <ProtectedRoute allowedRoles={["citizen", "officer", "admin"]}>
+            <ComplaintForm />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/my-complaints"
+        element={
+          <ProtectedRoute allowedRoles={["citizen", "officer", "admin"]}>
+            <MyComplaints />
+          </ProtectedRoute>
+        }
+      />
+      {/* Wrap /authority with ProtectedRoute allowedRoles={["officer", "admin"]} once Authority page is merged */}
       <Route path="/report" element={<ComplaintForm />} />
       <Route path="/my-complaints" element={<MyComplaints />} />
       <Route path="/authority" element={<AuthorityDashboard />} />
       <Route
         path="/map"
         element={
-          <Suspense fallback={<div>Loading map...</div>}>
-            <MapView />
-          </Suspense>
+          <ProtectedRoute allowedRoles={["officer", "admin"]}>
+            <Suspense fallback={<div>Loading map...</div>}>
+              <MapView />
+            </Suspense>
+          </ProtectedRoute>
         }
       />
     </Routes>

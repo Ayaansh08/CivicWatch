@@ -57,3 +57,29 @@ def get_current_user(
             detail="User not found",
         )
     return user
+
+
+# Usage example in a route:
+# def officer_endpoint(user: User = Depends(require_role("officer", "admin"))):
+def require_role(*allowed_roles: str):
+    """
+    Create a FastAPI dependency that allows only users with one of the given roles.
+    Builds on get_current_user so existing get_current_user test overrides keep working.
+    """
+    def role_checker(current_user: User = Depends(get_current_user)) -> User:
+        """Check whether the authenticated user's role is permitted."""
+        # Support ORM User objects returned by get_current_user (and dicts in legacy stubs)
+        user_role = (
+            current_user.get("role")
+            if isinstance(current_user, dict)
+            else getattr(current_user, "role", None)
+        )
+        # Raise 403 Forbidden if the user's role is not in allowed_roles
+        if user_role not in allowed_roles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You do not have permission to do this",
+            )
+        return current_user
+
+    return role_checker
