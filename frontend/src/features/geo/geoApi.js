@@ -143,3 +143,30 @@ export async function fetchHotspots(cellSize = 0.01, minCount = 3, filters = {})
   // Parse and return JSON hotspot records
   return await response.json();
 }
+
+/**
+ * Fetch overall geospatial analytics summary report.
+ *
+ * @returns {Promise<Object>} Report summary containing totals, breakdowns, and averages.
+ * @throws {Error} If the HTTP response is not OK.
+ */
+export async function fetchReport() {
+  // Retrieve token from local storage
+  const token = localStorage.getItem(TOKEN_KEY);
+
+  // Call backend reports summary endpoint with authorization header
+  const response = await fetch(`${API_URL}/geo/reports/summary`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token || ""}`,
+    },
+  });
+
+  // Throw descriptive error if request failed
+  if (!response.ok) {
+    throw new Error(`Failed to fetch reports summary: ${response.status}`);
+  }
+
+  // Parse and return JSON report object
+  return await response.json();
+}

@@ -1,7 +1,7 @@
 """
 FastAPI route handlers for geospatial queries on complaints.
 Provides /geo/complaints/nearby, /geo/complaints/bbox, /geo/heatmap,
-and /geo/hotspots endpoints.
+/geo/hotspots, and /geo/reports/summary endpoints.
 """
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query, HTTPException, status
@@ -9,12 +9,18 @@ from sqlalchemy.orm import Session
 
 from backend.app.platform.database import get_db
 from backend.app.platform.deps import get_current_user
-from backend.app.platform.models import User, Complaint
-from backend.app.geo.schemas import GeoComplaintOut, DensityCellOut, HotspotOut
+from backend.app.platform.models import User, Complaint, Category
+from backend.app.geo.schemas import (
+    GeoComplaintOut,
+    DensityCellOut,
+    HotspotOut,
+    ReportsSummaryOut,
+)
 from backend.app.geo.queries import query_nearby_complaints, query_bbox_complaints
 from backend.app.geo.permissions import require_officer
 from backend.app.geo.density import build_density
 from backend.app.geo.hotspot_api import get_hotspots_with_categories
+from backend.app.geo.reports import build_summary_report
 
 # Create APIRouter with /geo prefix and tag
 router = APIRouter(prefix="/geo", tags=["geo"])
@@ -223,3 +229,49 @@ def get_hotspots_endpoint(
         status=status_param,
         limit=5000,
     )
+
+
+@router.get(
+    "/reports/summary",
+    response_model=ReportsSummaryOut,
+    summary="Get overall analytics and geospatial summary",
+)
+def get_reports_summary_endpoint(
+    db: Session = Depends(get_db),
+    # Restricted to officer and admin users
+    current_user: User = Depends(require_officer),
+):
+    """
+    Generate analytics summary containing status breakdown, category distribution,
+    top geographic areas, and average resolution time.
+    """
+    # Fetch complaints with category names and timestamps
+    rows = (
+        db.query(
+            Complaint.status,
+            Complaint.latitude,
+            Complaint.longitude,
+            Complaint.created_at,
+            Complaint.updated_at,
+            Category.name.label("category_name"),
+        )
+        .outerjoin(Category, Complaint.category_id == Category.id)
+        .limit(5000)
+        .all()
+    )
+
+    # Format rows into plain dictionaries for pure calculation functions
+    complaints = [
+        {
+            "status": r.status,
+            "latitude": r.latitude,
+            "longitude": r.longitude,
+            "created_at": r.created_at,
+            "updated_at": r.updated_at,
+            "category": r.category_name or "General",
+        }
+        for r in rows
+    ]
+
+    # Calculate summary using pure reporting module
+    return build_summary_report(complaints)

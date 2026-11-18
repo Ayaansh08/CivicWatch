@@ -1,7 +1,8 @@
 /**
  * MapView component: renders an interactive Leaflet map with real complaints
  * fetched from the backend API, clustered using MarkerClusterLayer, with filters,
- * a toggle between Markers and Heatmap views, and optional Hotspots layer overlay.
+ * a toggle between Markers and Heatmap views, optional Hotspots layer overlay,
+ * and navigation links to Reports.
  */
 import React, { useState, useEffect } from "react";
 import { MapContainer, TileLayer } from "react-leaflet";
@@ -102,7 +103,7 @@ function MapView() {
           setHotspots(data);
         }
       } catch {
-        // Log or keep previous hotspots on failure without breaking primary map
+        // Keep previous hotspots on failure without breaking primary map
       }
     }
 
@@ -115,11 +116,24 @@ function MapView() {
 
   return (
     <div className="map-view-container">
-      {/* Top toolbar with filters, view toggle, and hotspots checkbox */}
+      {/* Top toolbar with filters, view toggle, hotspots checkbox, and reports link */}
       <div className="map-toolbar">
         <MapFilters filters={filters} onFilterChange={setFilters} />
 
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+          {/* Link to Reports Page */}
+          <a
+            href="/reports"
+            style={{
+              fontSize: "14px",
+              color: "#0070f3",
+              textDecoration: "none",
+              fontWeight: "bold",
+            }}
+          >
+            Reports & Charts &rarr;
+          </a>
+
           {/* Hotspots layer toggle checkbox */}
           <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", fontSize: "14px" }}>
             <input

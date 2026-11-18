@@ -1,9 +1,9 @@
 """
 Pydantic response schemas for geospatial endpoints.
 Defines output format for complaints retrieved through nearby and bounding-box queries,
-density heatmap cells, and hotspot zones.
+density heatmap cells, hotspot zones, and analytics reports.
 """
-from typing import Optional
+from typing import List, Optional
 from pydantic import BaseModel, ConfigDict
 
 
@@ -46,5 +46,38 @@ class HotspotOut(BaseModel):
     center_lat: float
     center_lon: float
     category: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class StatusCount(BaseModel):
+    """Complaint count grouped by lifecycle status."""
+    status: str
+    count: int
+
+
+class CategoryCount(BaseModel):
+    """Complaint count grouped by category."""
+    category: str
+    count: int
+
+
+class AreaCount(BaseModel):
+    """Complaint count grouped by geographic grid area."""
+    area: str
+    count: int
+
+
+class ReportsSummaryOut(BaseModel):
+    """
+    Overall system analytics summary report.
+    Includes totals, distributions by status, category, top geographic areas,
+    and average resolution duration in hours.
+    """
+    total: int
+    by_status: List[StatusCount]
+    by_category: List[CategoryCount]
+    by_area: List[AreaCount]
+    avg_resolution_hours: Optional[float] = None
 
     model_config = ConfigDict(from_attributes=True)
