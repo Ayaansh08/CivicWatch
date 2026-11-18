@@ -21,6 +21,7 @@ from backend.app.geo.permissions import require_officer
 from backend.app.geo.density import build_density
 from backend.app.geo.hotspot_api import get_hotspots_with_categories
 from backend.app.geo.reports import build_summary_report
+from backend.app.geo.constants import MAX_RESULTS, HEATMAP_CELL_SIZE, DEFAULT_CELL_SIZE
 
 # Create APIRouter with /geo prefix and tag
 router = APIRouter(prefix="/geo", tags=["geo"])
@@ -165,13 +166,13 @@ def get_heatmap_endpoint(
         query = query.filter(Complaint.status == status_param)
 
     # Execute query with safety limit
-    rows = query.limit(5000).all()
+    rows = query.limit(MAX_RESULTS).all()
 
     # Format points list for density function
     points = [{"lat": r[0], "lon": r[1]} for r in rows]
 
-    # Group points into density cells of 0.002 degrees
-    return build_density(points, cell_size=0.002)
+    # Group points into density cells using the configured heatmap cell size
+    return build_density(points, cell_size=HEATMAP_CELL_SIZE)
 
 
 @router.get(
@@ -227,7 +228,7 @@ def get_hotspots_endpoint(
         min_count=min_count,
         category_id=category_id,
         status=status_param,
-        limit=5000,
+        limit=MAX_RESULTS,
     )
 
 
@@ -256,7 +257,7 @@ def get_reports_summary_endpoint(
             Category.name.label("category_name"),
         )
         .outerjoin(Category, Complaint.category_id == Category.id)
-        .limit(5000)
+        .limit(MAX_RESULTS)
         .all()
     )
 

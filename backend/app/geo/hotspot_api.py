@@ -9,15 +9,17 @@ from sqlalchemy.orm import Session
 
 from backend.app.platform.models import Complaint, Category
 from backend.app.geo.hotspot import find_hotspots
+# Import named constants to avoid magic numbers
+from backend.app.geo.constants import MAX_RESULTS, DEFAULT_CELL_SIZE
 
 
 def get_hotspots_with_categories(
     db: Session,
-    cell_size: float = 0.01,
+    cell_size: float = DEFAULT_CELL_SIZE,
     min_count: int = 3,
     category_id: Optional[int] = None,
     status: Optional[str] = None,
-    limit: int = 5000,
+    limit: int = MAX_RESULTS,
 ) -> List[Dict[str, Any]]:
     """
     Retrieve complaints matching filters, compute spatial hotspots using find_hotspots,

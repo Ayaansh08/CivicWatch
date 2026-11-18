@@ -7,6 +7,9 @@ import math
 from typing import List, Dict, Any, Optional
 from collections import Counter
 
+# Import named constant for geographic grouping cell size
+from backend.app.geo.constants import REPORT_CELL_SIZE
+
 
 def count_by_status(complaints: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """
@@ -29,7 +32,7 @@ def count_by_category(complaints: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 
 
 def group_by_area(
-    complaints: List[Dict[str, Any]], cell_size: float = 0.01, top_n: int = 10
+    complaints: List[Dict[str, Any]], cell_size: float = REPORT_CELL_SIZE, top_n: int = 10
 ) -> List[Dict[str, Any]]:
     """
     Group complaints into geographic grid cells of 0.01 degrees and label each cell
