@@ -11,8 +11,12 @@ from sqlalchemy import create_engine, Column, Integer, String
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy.pool import StaticPool
 
+from backend.app.main import app as main_app
+from backend.app.platform.database import Base as PlatformBase, get_db as platform_get_db
+from backend.app.platform.deps import get_current_user
+from backend.app.platform.models import User  # noqa: F401
 from backend.app.platform.pagination import paginate, pagination_params
-from backend.app.platform.database import get_db
+from backend.app.platform.security import hash_password
 
 # Shared in-memory SQLite engine for pagination tests
 SQLITE_URL = "sqlite:///:memory:"
@@ -130,17 +134,10 @@ def test_page_below_1_returns_422():
 
 # --- Paginated shape tests for admin list endpoints ---
 
-from backend.app.main import app as main_app
-from backend.app.platform.database import Base as PlatformBase, get_db as platform_get_db
-from backend.app.platform.deps import get_current_user
-from backend.app.platform.models import User  # noqa: F401
-from backend.app.platform.security import hash_password
-from sqlalchemy.pool import StaticPool as SP
-
 admin_engine = create_engine(
     "sqlite:///:memory:",
     connect_args={"check_same_thread": False},
-    poolclass=SP,
+    poolclass=StaticPool,
 )
 AdminSession = sessionmaker(autocommit=False, autoflush=False, bind=admin_engine)
 

@@ -194,7 +194,10 @@ def list_officers(
     "/users/{user_id}/role",
     response_model=UserOut,
     summary="Change a user's role",
-    description="Change a user's role to citizen, officer, or admin. An admin cannot change their own role.",
+    description=(
+        "Change a user's role to citizen, officer, or admin. "
+        "An admin cannot change their own role."
+    ),
 )
 def update_user_role(
     user_id: int,
