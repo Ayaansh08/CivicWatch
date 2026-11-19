@@ -14,12 +14,27 @@ class RegisterRequest(BaseModel):
 
     @field_validator("password")
     @classmethod
-    def password_must_be_at_least_6_chars(cls, value: str) -> str:
-        """Reject passwords shorter than 6 characters."""
+    def password_length(cls, value: str) -> str:
+        """Reject passwords shorter than 6 or longer than 72 characters (bcrypt limit)."""
         # Raise a ValueError so Pydantic returns HTTP 422 automatically
         if len(value) < 6:
             raise ValueError("Password must be at least 6 characters long")
+        # bcrypt silently truncates at 72 bytes — reject early to avoid confusion
+        if len(value) > 72:
+            raise ValueError("Password must be at most 72 characters long")
         return value
+
+    @field_validator("name")
+    @classmethod
+    def name_not_blank(cls, value: str) -> str:
+        """Reject names that are only whitespace or shorter than 2 characters."""
+        # Strip whitespace and check the minimum length
+        stripped = value.strip()
+        if len(stripped) < 2:
+            raise ValueError("Name must be at least 2 characters and not only spaces")
+        if len(stripped) > 60:
+            raise ValueError("Name must be at most 60 characters")
+        return stripped
 
 
 class LoginRequest(BaseModel):

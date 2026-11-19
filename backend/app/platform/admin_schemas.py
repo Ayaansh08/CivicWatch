@@ -2,7 +2,7 @@
 Pydantic request and response schemas for the /admin management endpoints.
 """
 from typing import Literal
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 
 class DepartmentCreate(BaseModel):
@@ -24,10 +24,21 @@ class DepartmentOut(BaseModel):
 class OfficerCreate(BaseModel):
     """Data required for an admin to create a new officer account."""
 
-    name: str
+    # Name must be 2–60 non-whitespace characters
+    name: str = Field(..., min_length=2, max_length=60)
     email: EmailStr
-    # Officer passwords must be at least 6 characters long
-    password: str = Field(..., min_length=6)
+    # Officer passwords must be 6–72 characters (bcrypt limit)
+    password: str = Field(..., min_length=6, max_length=72)
+
+    @field_validator("name")
+    @classmethod
+    def name_not_blank(cls, value: str) -> str:
+        """Reject names that are only whitespace."""
+        stripped = value.strip()
+        # Ensure the trimmed name still meets the minimum length
+        if len(stripped) < 2:
+            raise ValueError("Name must be at least 2 non-whitespace characters")
+        return stripped
 
 
 class UserOut(BaseModel):
