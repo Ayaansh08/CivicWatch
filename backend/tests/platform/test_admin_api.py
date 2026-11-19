@@ -144,13 +144,15 @@ def test_department_name_shorter_than_3_characters_returns_422(admin_user):
 
 
 def test_get_departments_lists_all_departments(admin_user):
-    """GET /admin/departments should return every department in the database."""
+    """GET /admin/departments should return a paginated dict with every department."""
     act_as(admin_user)
     client.post("/admin/departments", json={"name": "Water Department"})
     client.post("/admin/departments", json={"name": "Sanitation"})
     response = client.get("/admin/departments")
     assert response.status_code == 200
-    names = [dept["name"] for dept in response.json()]
+    # Response is now paginated: {"items": [...], "total": n, "page": 1, "size": 20, "pages": 1}
+    data = response.json()
+    names = [dept["name"] for dept in data["items"]]
     assert "Water Department" in names
     assert "Sanitation" in names
 
@@ -264,14 +266,15 @@ def test_officer_password_under_6_characters_returns_422(admin_user):
 def test_get_officers_returns_only_users_with_officer_role(
     admin_user, officer_user, citizen_user
 ):
-    """GET /admin/officers should list only users whose role is 'officer'."""
+    """GET /admin/officers should return a paginated dict with only officers."""
     act_as(admin_user)
     response = client.get("/admin/officers")
     assert response.status_code == 200
+    # Response is now paginated: {"items": [...], "total": n, ...}
     data = response.json()
-    assert len(data) == 1
-    assert data[0]["email"] == officer_user.email
-    assert data[0]["role"] == "officer"
+    assert len(data["items"]) == 1
+    assert data["items"][0]["email"] == officer_user.email
+    assert data["items"][0]["role"] == "officer"
 
 
 def test_patch_user_role_changes_role(admin_user, citizen_user):

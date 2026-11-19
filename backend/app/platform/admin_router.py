@@ -2,7 +2,6 @@
 Admin-only management routes for departments, officers, and user roles.
 Every route on this router requires the 'admin' role via require_role("admin").
 """
-from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -16,6 +15,7 @@ from backend.app.platform.admin_schemas import (
 from backend.app.platform.database import get_db
 from backend.app.platform.deps import require_role
 from backend.app.platform.models import Complaint, Department, User
+from backend.app.platform.pagination import paginate, pagination_params
 from backend.app.platform.security import hash_password
 
 # Protect all routes under /admin so only admins can access them
@@ -26,7 +26,13 @@ router = APIRouter(
 )
 
 
-@router.post("/departments", response_model=DepartmentOut, status_code=201)
+@router.post(
+    "/departments",
+    response_model=DepartmentOut,
+    status_code=201,
+    summary="Create a department",
+    description="Create a new city department. Returns 400 if the name already exists.",
+)
 def create_department(
     payload: DepartmentCreate, db: Session = Depends(get_db)
 ):
@@ -48,14 +54,27 @@ def create_department(
     return department
 
 
-@router.get("/departments", response_model=List[DepartmentOut])
-def list_departments(db: Session = Depends(get_db)):
-    """Return a list of all city departments."""
-    # Fetch all departments sorted by their id
-    return db.query(Department).order_by(Department.id).all()
+@router.get(
+    "/departments",
+    summary="List departments",
+    description="Return a paginated list of all city departments.",
+)
+def list_departments(
+    db: Session = Depends(get_db),
+    params: dict = Depends(pagination_params),
+):
+    """Return a paginated list of all city departments."""
+    # Build a base query sorted by id, then apply pagination
+    query = db.query(Department).order_by(Department.id)
+    return paginate(query, params["page"], params["size"])
 
 
-@router.put("/departments/{department_id}", response_model=DepartmentOut)
+@router.put(
+    "/departments/{department_id}",
+    response_model=DepartmentOut,
+    summary="Rename a department",
+    description="Rename an existing department. Returns 404 if not found, 400 on duplicate name.",
+)
 def rename_department(
     department_id: int,
     payload: DepartmentCreate,
@@ -89,7 +108,12 @@ def rename_department(
     return department
 
 
-@router.delete("/departments/{department_id}", status_code=204)
+@router.delete(
+    "/departments/{department_id}",
+    status_code=204,
+    summary="Delete a department",
+    description="Delete a department if no complaints are assigned to it.",
+)
 def delete_department(department_id: int, db: Session = Depends(get_db)):
     """Delete a department if no complaints are assigned to it."""
     # Look up the target department
@@ -118,7 +142,13 @@ def delete_department(department_id: int, db: Session = Depends(get_db)):
     return None
 
 
-@router.post("/officers", response_model=UserOut, status_code=201)
+@router.post(
+    "/officers",
+    response_model=UserOut,
+    status_code=201,
+    summary="Create an officer",
+    description="Create a new user account with the officer role. Returns 400 on duplicate email.",
+)
 def create_officer(payload: OfficerCreate, db: Session = Depends(get_db)):
     """Create a new user account with the 'officer' role."""
     # Reject duplicate email addresses
@@ -141,19 +171,31 @@ def create_officer(payload: OfficerCreate, db: Session = Depends(get_db)):
     return officer
 
 
-@router.get("/officers", response_model=List[UserOut])
-def list_officers(db: Session = Depends(get_db)):
-    """Return all users whose role is 'officer'."""
-    # Filter the users table to officers only
-    return (
+@router.get(
+    "/officers",
+    summary="List officers",
+    description="Return a paginated list of all users with the officer role.",
+)
+def list_officers(
+    db: Session = Depends(get_db),
+    params: dict = Depends(pagination_params),
+):
+    """Return a paginated list of users whose role is 'officer'."""
+    # Filter to officers only, sorted by id, then apply pagination
+    query = (
         db.query(User)
         .filter(User.role == "officer")
         .order_by(User.id)
-        .all()
     )
+    return paginate(query, params["page"], params["size"])
 
 
-@router.patch("/users/{user_id}/role", response_model=UserOut)
+@router.patch(
+    "/users/{user_id}/role",
+    response_model=UserOut,
+    summary="Change a user's role",
+    description="Change a user's role to citizen, officer, or admin. An admin cannot change their own role.",
+)
 def update_user_role(
     user_id: int,
     payload: RoleUpdate,
