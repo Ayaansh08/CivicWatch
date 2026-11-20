@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import DepartmentsPanel from "../../features/admin/DepartmentsPanel";
 import OfficersPanel from "../../features/admin/OfficersPanel";

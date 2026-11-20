@@ -1,5 +1,8 @@
 """
 FastAPI dependency functions used by route handlers.
+
+Role name constants are defined here so every module imports from one place
+instead of using raw strings like "officer" that are easy to mistype.
 """
 from typing import Any, Dict, Optional
 import jwt
@@ -7,6 +10,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
+from backend.app.platform.config import ROLE_ADMIN, ROLE_CITIZEN, ROLE_OFFICER  # noqa: F401
 from backend.app.platform.database import get_db
 from backend.app.platform.models import User
 from backend.app.platform.security import decode_access_token
@@ -65,6 +69,7 @@ def require_role(*allowed_roles: str):
     """
     Create a FastAPI dependency that allows only users with one of the given roles.
     Builds on get_current_user so existing get_current_user test overrides keep working.
+    Example: Depends(require_role("officer", "admin"))
     """
     def role_checker(current_user: User = Depends(get_current_user)) -> User:
         """Check whether the authenticated user's role is permitted."""
