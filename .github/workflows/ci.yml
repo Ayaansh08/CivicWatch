@@ -44,9 +44,6 @@ jobs:
   frontend:
     name: Frontend – lint and test
     runs-on: ubuntu-latest
-    # Only run this job if frontend/package.json actually exists
-    if: ${{ hashFiles('frontend/package.json') != '' }}
-
     defaults:
       run:
         # All commands in this job run from the frontend folder
@@ -57,22 +54,37 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v4
 
-      # Step 2: install Node.js 20
+      # Step 2: skip remaining steps if frontend/package.json is missing
+      - name: Check frontend exists
+        id: check_frontend
+        run: |
+          if [ -f "frontend/package.json" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "No frontend/package.json found — skipping frontend job steps."
+          fi
+
+      # Step 3: install Node.js 20
       - name: Set up Node.js 20
+        if: steps.check_frontend.outputs.exists == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: "20"
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
-      # Step 3: install npm packages exactly as recorded in package-lock.json
+      # Step 4: install npm packages exactly as recorded in package-lock.json
       - name: Install npm dependencies
+        if: steps.check_frontend.outputs.exists == 'true'
         run: npm ci
 
-      # Step 4: run the linter if a lint script is defined
+      # Step 5: run the linter if a lint script is defined
       - name: Lint (if script exists)
+        if: steps.check_frontend.outputs.exists == 'true'
         run: npm run lint --if-present
 
-      # Step 5: run Jest tests if a test script is defined
+      # Step 6: run Jest tests if a test script is defined
       - name: Run Jest tests (if script exists)
+        if: steps.check_frontend.outputs.exists == 'true'
         run: npm test --if-present -- --ci

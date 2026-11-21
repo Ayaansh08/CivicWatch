@@ -79,19 +79,19 @@ function ReportsPage() {
               marginBottom: "28px",
             }}
           >
-            <div style={{ padding: "16px", backgroundColor: "#f8f9fa", borderRadius: "8px", border: "1px solid #e9ecef" }}>
-              <h4 style={{ margin: "0 0 8px 0", color: "#6c757d" }}>Total Complaints</h4>
-              <p style={{ margin: 0, fontSize: "28px", fontWeight: "bold", color: "#212529" }}>{report.total}</p>
+            <div className="metric-card">
+              <h4>Total Complaints</h4>
+              <p style={{ color: "var(--text-primary)" }}>{report.total}</p>
             </div>
 
-            <div style={{ padding: "16px", backgroundColor: "#f8f9fa", borderRadius: "8px", border: "1px solid #e9ecef" }}>
-              <h4 style={{ margin: "0 0 8px 0", color: "#6c757d" }}>Resolved Complaints</h4>
-              <p style={{ margin: 0, fontSize: "28px", fontWeight: "bold", color: "#28a745" }}>{resolvedCount}</p>
+            <div className="metric-card">
+              <h4>Resolved Complaints</h4>
+              <p style={{ color: "var(--success)" }}>{resolvedCount}</p>
             </div>
 
-            <div style={{ padding: "16px", backgroundColor: "#f8f9fa", borderRadius: "8px", border: "1px solid #e9ecef" }}>
-              <h4 style={{ margin: "0 0 8px 0", color: "#6c757d" }}>Avg Resolution Time</h4>
-              <p style={{ margin: 0, fontSize: "28px", fontWeight: "bold", color: "#17a2b8" }}>
+            <div className="metric-card">
+              <h4>Avg Resolution Time</h4>
+              <p style={{ color: "var(--info)" }}>
                 {report.avg_resolution_hours != null ? `${report.avg_resolution_hours} hrs` : "N/A"}
               </p>
             </div>

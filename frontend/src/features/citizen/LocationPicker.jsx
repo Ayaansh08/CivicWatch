@@ -77,8 +77,9 @@ export default function LocationPicker({ latitude, longitude, onLocationChange }
       <div style={{ height: "250px", width: "100%", borderRadius: "4px", overflow: "hidden", marginBottom: "8px" }}>
         <MapContainer center={center} zoom={13} style={{ height: "100%", width: "100%" }}>
           <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            attribution='&copy; <a href="https://www.esri.com/">Esri</a>'
+            url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}"
+            maxZoom={19}
           />
           <ClickHandler onLocationSelect={onLocationChange} />
           {currentLat && currentLng && <RecenterMap lat={currentLat} lng={currentLng} />}

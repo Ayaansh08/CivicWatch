@@ -5,8 +5,8 @@
  * and navigation links to Reports.
  */
 import React, { useState, useEffect } from "react";
-import { MapContainer, TileLayer } from "react-leaflet";
-import "leaflet/dist/leaflet.css";
+import { MapContainer, TileLayer, useMap } from "react-leaflet";
+import "./leafletSetup";
 import "./geo.css";
 
 // Geo API helpers
@@ -15,6 +15,24 @@ import MarkerClusterLayer from "./MarkerClusterLayer";
 import HeatLayer from "./HeatLayer";
 import HotspotLayer from "./HotspotLayer";
 import MapFilters from "./MapFilters";
+
+/**
+ * Ensures Leaflet recalculates viewport bounds on mount and tab switch,
+ * preventing blank/zero-height gray tile bugs.
+ */
+function MapResizer() {
+  const map = useMap();
+  useEffect(() => {
+    if (map && typeof map.invalidateSize === "function") {
+      map.invalidateSize();
+      const timer = setTimeout(() => {
+        map.invalidateSize();
+      }, 250);
+      return () => clearTimeout(timer);
+    }
+  }, [map]);
+  return null;
+}
 
 // Fixed starting bounding box covering the Delhi NCR region
 const DELHI_NCR_BBOX = {
@@ -182,11 +200,13 @@ function MapView() {
         center={defaultCenter}
         zoom={defaultZoom}
         scrollWheelZoom={true}
-        style={{ height: "500px", width: "100%", borderRadius: "8px" }}
+        style={{ height: "550px", width: "100%", borderRadius: "10px", minHeight: "500px" }}
       >
+        <MapResizer />
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://www.esri.com/">Esri</a> &mdash; Esri, DeLorme, NAVTEQ, TomTom, Intermap, iPC, USGS, FAO, NPS, NRCAN, GeoBase, Kadaster NL, Ordnance Survey, Esri Japan, METI, Esri China (Hong Kong), and the GIS User Community'
+          url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}"
+          maxZoom={19}
         />
 
         {/* Primary map layer: either clustered markers or heatmap */}

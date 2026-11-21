@@ -1,29 +1,30 @@
 /* Admin panel styles */
 
 .admin-page {
-  max-width: 900px;
-  margin: 2rem auto;
-  padding: 0 1rem;
+  max-width: 960px;
+  margin: 32px auto;
+  padding: 0 24px;
 }
 
 .admin-panel {
-  background: #fff;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 1.5rem;
-  margin-bottom: 2rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
 }
 
 .admin-panel h2 {
   margin-top: 0;
   font-size: 1.4rem;
-  color: #333;
+  color: var(--text-primary);
 }
 
 .admin-panel h3 {
   font-size: 1.1rem;
   margin-top: 1.5rem;
-  color: #555;
+  color: var(--text-secondary);
 }
 
 .admin-list {
@@ -36,46 +37,64 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.5rem 0;
-  border-bottom: 1px solid #eee;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  border-radius: 6px;
+  transition: background-color 0.15s ease;
+}
+
+.admin-list-item:hover {
+  background-color: var(--surface-hover);
 }
 
 .admin-list-item span {
   flex: 1;
+  color: var(--text-primary);
 }
 
 .admin-email {
-  color: #777;
+  color: var(--text-muted);
   font-size: 0.9rem;
 }
 
 .admin-list-item button {
-  padding: 0.3rem 0.7rem;
+  padding: 0.35rem 0.8rem;
   font-size: 0.85rem;
   cursor: pointer;
-  border: 1px solid #aaa;
+  border: 1px solid var(--border);
   border-radius: 4px;
-  background: #f5f5f5;
+  background: var(--surface-hover);
+  color: var(--text-primary);
+  transition: all 0.15s ease;
 }
 
 .admin-list-item button:hover {
-  background: #e5e5e5;
+  background: var(--primary);
+  border-color: var(--primary);
 }
 
 .admin-pagination {
   display: flex;
   align-items: center;
   gap: 1rem;
-  margin: 1rem 0;
+  margin: 1.25rem 0;
   font-size: 0.9rem;
+  color: var(--text-secondary);
 }
 
 .admin-pagination button {
-  padding: 0.3rem 0.8rem;
+  padding: 6px 14px;
   cursor: pointer;
-  border: 1px solid #aaa;
-  border-radius: 4px;
-  background: #f5f5f5;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface-hover);
+  color: var(--text-primary);
+  transition: all 0.15s ease;
+}
+
+.admin-pagination button:hover:not(:disabled) {
+  background: var(--primary);
+  border-color: var(--primary);
 }
 
 .admin-pagination button:disabled {
@@ -86,52 +105,49 @@
 .admin-form {
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
-  max-width: 400px;
+  gap: 12px;
+  max-width: 440px;
 }
 
 .admin-form input {
-  padding: 0.5rem;
-  font-size: 1rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+  padding: 9px 12px;
+  font-size: 0.95rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background-color: var(--bg);
+  color: var(--text-primary);
+}
+
+.admin-form input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-glow);
 }
 
 .admin-form button[type="submit"] {
-  padding: 0.6rem 1rem;
-  background: #2563eb;
-  color: #fff;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 1rem;
-}
-
-.admin-form button[type="submit"]:hover {
-  background: #1d4ed8;
-}
-
-.admin-error {
-  color: #dc2626;
-  font-size: 0.9rem;
-  margin: 0.5rem 0;
-}
-
-/* Navbar styles (used in auth/NavBar.jsx) */
-.navbar {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  background: #1e3a5f;
-  padding: 0.75rem 1.5rem;
-}
-
-.nav-link {
-  color: #fff;
-  text-decoration: none;
+  padding: 10px 16px;
   font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  border-radius: 6px;
+  background: var(--primary);
+  color: #fff;
+  transition: background-color 0.15s ease;
 }
 
-.nav-link:hover {
-  text-decoration: underline;
+.admin-form button[type="submit"]:hover:not(:disabled) {
+  background: var(--primary-hover);
+}
+
+.admin-form button[type="submit"]:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.field-error,
+.api-error {
+  color: #f87171;
+  font-size: 0.88rem;
+  margin: 0.25rem 0;
 }

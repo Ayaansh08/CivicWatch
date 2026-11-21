@@ -3,25 +3,29 @@
  */
 import { useEffect } from "react";
 import { useMap } from "react-leaflet";
-import L from "leaflet";
-import "leaflet.markercluster";
+import L from "./leafletSetup";
+import * as MarkerClusterModule from "leaflet.markercluster";
 import "leaflet.markercluster/dist/MarkerCluster.css";
 import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 
-// Asset imports for default marker icons in Vite
-import iconUrl from "leaflet/dist/images/marker-icon.png";
-import iconRetinaUrl from "leaflet/dist/images/marker-icon-2x.png";
-import shadowUrl from "leaflet/dist/images/marker-shadow.png";
-
 import { buildPopupHtml } from "./mapHelpers";
 
-// Fix default marker icon resolution in Vite asset bundling
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconUrl,
-  iconRetinaUrl,
-  shadowUrl,
-});
+/**
+ * Helper to safely instantiate a marker cluster group, with fallback to standard FeatureGroup.
+ */
+function createClusterGroup() {
+  if (typeof L.markerClusterGroup === "function") {
+    return L.markerClusterGroup();
+  }
+  if (typeof window !== "undefined" && typeof window.L?.markerClusterGroup === "function") {
+    return window.L.markerClusterGroup();
+  }
+  if (MarkerClusterModule && typeof MarkerClusterModule.MarkerClusterGroup === "function") {
+    return new MarkerClusterModule.MarkerClusterGroup();
+  }
+  // Safe fallback if cluster plugin cannot attach
+  return L.featureGroup();
+}
 
 /**
  * Leaflet cluster layer that places complaints inside an L.markerClusterGroup.
@@ -34,7 +38,7 @@ function MarkerClusterLayer({ complaints }) {
 
   useEffect(() => {
     // Create a new marker cluster group
-    const clusterGroup = L.markerClusterGroup();
+    const clusterGroup = createClusterGroup();
 
     // Iterate over complaints and add individual markers to the cluster group
     (complaints || []).forEach((complaint) => {

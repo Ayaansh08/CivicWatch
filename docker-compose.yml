@@ -1,7 +1,5 @@
 # docker-compose.yml — spins up the PostgreSQL + PostGIS database for local development
 
-version: "3.9"
-
 services:
   # The only service we run: a PostgreSQL database with the PostGIS extension built in
   db:

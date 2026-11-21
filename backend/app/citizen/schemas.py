@@ -1,5 +1,6 @@
 """Request and response schemas for citizen complaints."""
 import datetime
+from typing import Optional
 from pydantic import BaseModel, Field
 
 
@@ -9,8 +10,8 @@ class StatusHistoryResponse(BaseModel):
     id: int
     complaint_id: int
     status: str
-    note: str | None = None
-    changed_by: int | None = None
+    note: Optional[str] = None
+    changed_by: Optional[int] = None
     changed_at: datetime.datetime
 
 
@@ -20,15 +21,15 @@ class ComplaintCreate(BaseModel):
     title: str = Field(min_length=5)
     description: str
     category_id: int
-    latitude: float | None = Field(default=None, ge=-90, le=90)
-    longitude: float | None = Field(default=None, ge=-180, le=180)
+    latitude: Optional[float] = Field(default=None, ge=-90, le=90)
+    longitude: Optional[float] = Field(default=None, ge=-180, le=180)
 
 
 class FeedbackCreate(BaseModel):
     """Schema for submitting feedback on a resolved complaint."""
 
     rating: int = Field(ge=1, le=5)
-    comment: str | None = None
+    comment: Optional[str] = None
 
 
 class ReopenRequest(BaseModel):
@@ -42,14 +43,14 @@ class ComplaintResponse(BaseModel):
 
     id: int
     title: str
-    description: str | None
+    description: Optional[str]
     category_id: int
     category_name: str
     status: str
     priority: str
-    latitude: float | None
-    longitude: float | None
-    photo_path: str | None = None
-    rating: int | None = None
-    created_at: datetime.datetime | None = None
+    latitude: Optional[float]
+    longitude: Optional[float]
+    photo_path: Optional[str] = None
+    rating: Optional[int] = None
+    created_at: Optional[datetime.datetime] = None
     user_id: int

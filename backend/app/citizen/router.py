@@ -1,6 +1,7 @@
 """API routes for citizen complaint operations."""
 import datetime
 import os
+from typing import Optional
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
@@ -108,8 +109,8 @@ def get_complaint_categories(db: Session = Depends(get_db)):
 
 @router.get("/mine", response_model=list[ComplaintResponse])
 def get_my_complaints(
-    status: str | None = None,
-    category_id: int | None = None,
+    status: Optional[str] = None,
+    category_id: Optional[int] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):

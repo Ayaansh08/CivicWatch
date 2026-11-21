@@ -1,34 +1,56 @@
+/* Styles for citizen complaint reporting and complaint list */
+
 .complaint-page {
-  max-width: 650px;
-  margin: 40px auto;
-  padding: 24px;
-  font-family: Arial, sans-serif;
+  max-width: 720px;
+  margin: 32px auto;
+  padding: 32px;
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
 }
 
 .complaint-page h1 {
   margin-bottom: 24px;
+  font-size: 1.8rem;
+  color: var(--text-primary);
 }
 
 .form-field {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin-bottom: 18px;
+  margin-bottom: 20px;
 }
 
 .form-field label {
-  font-weight: 600;
+  font-weight: 500;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .form-field input,
 .form-field textarea,
 .form-field select {
   width: 100%;
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  font-size: 16px;
+  padding: 10px 12px;
+  background-color: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.95rem;
+  color: var(--text-primary);
   box-sizing: border-box;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.form-field input:focus,
+.form-field textarea:focus,
+.form-field select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-glow);
 }
 
 .form-field textarea {
@@ -38,26 +60,64 @@
 
 .form-field p,
 .complaint-page [role="alert"] {
-  color: #c62828;
+  color: #f87171;
   margin: 0;
+  font-size: 0.88rem;
 }
 
 .complaint-page [role="status"] {
-  color: #237a36;
+  color: #34d399;
   font-weight: 600;
 }
 
 .complaint-page button {
-  padding: 11px 22px;
+  padding: 11px 24px;
   border: none;
-  border-radius: 5px;
-  background: #1769aa;
+  border-radius: 6px;
+  background-color: var(--primary);
   color: white;
-  font-size: 16px;
+  font-size: 1rem;
+  font-weight: 600;
   cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.complaint-page button:hover:not(:disabled) {
+  background-color: var(--primary-hover);
+  transform: translateY(-1px);
 }
 
 .complaint-page button:disabled {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* My Complaints List Cards */
+.complaints-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.complaint-card {
+  background-color: var(--surface) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 10px !important;
+  padding: 20px !important;
+  color: var(--text-primary);
+  transition: all 0.15s ease;
+}
+
+.complaint-card:hover {
+  border-color: var(--primary) !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.complaint-card h3 {
+  color: var(--text-primary) !important;
+}
+
+.complaint-card p {
+  color: var(--text-secondary) !important;
 }

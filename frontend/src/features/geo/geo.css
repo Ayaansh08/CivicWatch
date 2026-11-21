@@ -1,8 +1,13 @@
-/* Plain styling for geospatial components and maps */
+/* Styling for geospatial components and maps */
+
 .map-view-container {
-  width: 100%;
-  margin: 0 auto;
-  font-family: sans-serif;
+  max-width: 1200px;
+  margin: 32px auto;
+  padding: 24px;
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
 }
 
 .map-toolbar {
@@ -10,53 +15,116 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.map-filters {
+  display: flex;
   gap: 12px;
-  margin-bottom: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.map-filters select {
+  background-color: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 0.9rem;
 }
 
 .map-view-toggle {
   display: flex;
   gap: 6px;
+  background-color: var(--bg);
+  padding: 4px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
 }
 
 .map-view-toggle button {
-  padding: 6px 14px;
+  padding: 6px 16px;
   cursor: pointer;
-  border: 1px solid #ccc;
-  background-color: #f7f7f7;
-  border-radius: 4px;
-  font-size: 14px;
+  border: none;
+  background-color: transparent;
+  color: var(--text-secondary);
+  border-radius: 6px;
+  font-size: 0.88rem;
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+
+.map-view-toggle button:hover {
+  color: var(--text-primary);
 }
 
 .map-view-toggle button.active {
-  background-color: #0070f3;
+  background-color: var(--primary);
   color: #fff;
-  border-color: #0070f3;
 }
 
 .status-message {
-  color: #555;
-  font-size: 14px;
-  margin: 6px 0;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin: 8px 0;
 }
 
 .error-message {
-  color: #d32f2f;
-  font-weight: bold;
-  font-size: 14px;
-  margin: 6px 0;
+  color: #f87171;
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin: 8px 0;
 }
 
 .empty-message {
-  color: #777;
+  color: var(--text-muted);
   font-style: italic;
-  font-size: 14px;
-  margin: 6px 0;
+  font-size: 0.9rem;
+  margin: 8px 0;
 }
 
 .count-message {
-  color: #333;
-  font-weight: 500;
-  font-size: 14px;
-  margin: 6px 0;
+  color: var(--primary);
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin: 8px 0;
+}
+
+/* Reports page styling */
+.reports-page-container {
+  max-width: 1000px;
+  margin: 32px auto;
+  padding: 24px;
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+}
+
+.metric-card {
+  padding: 20px;
+  background-color: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.metric-card h4 {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.metric-card p {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 700;
 }

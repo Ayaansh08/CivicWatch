@@ -39,14 +39,14 @@ function BarChart({ items }) {
             </span>
 
             {/* Track container */}
-            <div style={{ flex: 1, backgroundColor: "#eee", borderRadius: "4px", height: "20px", overflow: "hidden" }}>
+            <div style={{ flex: 1, backgroundColor: "var(--surface-hover, #334155)", borderRadius: "4px", height: "20px", overflow: "hidden" }}>
               {/* Proportional filled bar */}
               <div
                 data-testid="bar-fill"
                 style={{
                   width: `${widthPercent}%`,
                   height: "100%",
-                  backgroundColor: "#0070f3",
+                  backgroundColor: "var(--primary, #3b82f6)",
                   borderRadius: "4px",
                   transition: "width 0.3s ease",
                 }}
